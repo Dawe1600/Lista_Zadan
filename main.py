@@ -5,9 +5,9 @@ from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout,
     QListWidget, QListWidgetItem, QInputDialog, QDialog, QDialogButtonBox, QLineEdit,
-    QPlainTextEdit
+    QPlainTextEdit, QMenu, QAction
 )
-from PyQt5.QtCore import Qt, QStandardPaths
+from PyQt5.QtCore import Qt, QStandardPaths, QSettings
 
 
 class DraggableMixin:
@@ -169,14 +169,19 @@ class ListaZadan(DraggableMixin, QWidget):
         self.setGeometry(1500, 750, 400, 300)
 
         # Ikona aplikacji (zielony ptaszek)
-        pixmap = QPixmap(64, 64)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        painter.setFont(QFont("Segoe UI Emoji", 40))
-        painter.setPen(QColor("#55ff55"))
-        painter.drawText(pixmap.rect(), Qt.AlignCenter, "✔")
-        painter.end()
-        self.setWindowIcon(QIcon(pixmap))
+        icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            # Fallback: rysowanie dynamiczne, jeśli brak pliku
+            pixmap = QPixmap(64, 64)
+            pixmap.fill(Qt.transparent)
+            painter = QPainter(pixmap)
+            painter.setFont(QFont("Segoe UI Emoji", 32))
+            painter.setPen(QColor("#55ff55"))
+            painter.drawText(pixmap.rect(), Qt.AlignCenter, "✔")
+            painter.end()
+            self.setWindowIcon(QIcon(pixmap))
 
         # Bez ramek + zawsze na wierzchu
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint)
@@ -190,6 +195,11 @@ class ListaZadan(DraggableMixin, QWidget):
         self.header.addWidget(title, alignment=Qt.AlignLeft)
 
         self.header.addStretch()
+
+        # przycisk ustawienia (zębatka)
+        self.settings_btn = QPushButton("⚙")
+        self.settings_btn.clicked.connect(self.show_settings_menu)
+        self.header.addWidget(self.settings_btn)
 
         # przycisk usuń zaznaczone
         self.del_btn = QPushButton("\U0001F5D1")
@@ -282,6 +292,17 @@ class ListaZadan(DraggableMixin, QWidget):
             }
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
+            }
+            QMenu {
+                background-color: #2D2D2D;
+                color: #E0E0E0;
+                border: 1px solid #3E3E3E;
+            }
+            QMenu::item {
+                padding: 5px 20px;
+            }
+            QMenu::item:selected {
+                background-color: #3E3E3E;
             }
         """)
 
@@ -392,6 +413,29 @@ class ListaZadan(DraggableMixin, QWidget):
 
         
         item.setForeground(QColor(100, 100, 100) if done else QColor(224, 224, 224))
+
+    def show_settings_menu(self):
+        menu = QMenu(self)
+        
+        autostart_action = QAction("Uruchamiaj przy starcie systemu", self)
+        autostart_action.setCheckable(True)
+        autostart_action.setChecked(self.check_autostart_status())
+        autostart_action.triggered.connect(self.toggle_autostart)
+        
+        menu.addAction(autostart_action)
+        menu.exec_(self.settings_btn.mapToGlobal(self.settings_btn.rect().bottomLeft()))
+
+    def check_autostart_status(self):
+        settings = QSettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings.NativeFormat)
+        return settings.contains("ListaZadan")
+
+    def toggle_autostart(self, checked):
+        settings = QSettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings.NativeFormat)
+        if checked:
+            app_path = sys.executable.replace('/', '\\')
+            settings.setValue("ListaZadan", f'"{app_path}"')
+        else:
+            settings.remove("ListaZadan")
 
 
 if __name__ == '__main__':
