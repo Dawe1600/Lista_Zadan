@@ -5,6 +5,7 @@ Prosta, lekka aplikacja desktopowa w **Python + PyQt5** do zarządzania listą z
 - oznaczania jako wykonane (checkbox + przekreślenie),
 - edycji zadania oraz opisu po dwukliku,
 - usuwania wykonanych zadań,
+- opcjonalnego uruchamiania wraz ze startem systemu (Windows),
 - automatycznego zapisu do pliku `tasks.json` w katalogu **Dokumenty** użytkownika.
 
 Aplikacja ma **okno bez ramek** (frameless) oraz możliwość **przeciągania okna myszką** (z wyłączeniem interaktywnych kontrolek, np. pól tekstowych i przycisków).
@@ -19,6 +20,7 @@ Aplikacja ma **okno bez ramek** (frameless) oraz możliwość **przeciągania ok
 - 🗑️ Usuwanie wszystkich **zaznaczonych (wykonanych)** zadań jednym przyciskiem
 - 💾 Automatyczny zapis/odczyt w formacie **JSON**
 - 🎨 Ciemny motyw (dark UI) + emoji w ikonach/przyciskach
+- ⚙️ Opcja **autostartu** z systemem Windows (w menu ustawień)
 - 🪟 Okno bez ramek + przeciąganie okna
 
 ## 🚀 Uruchomienie
