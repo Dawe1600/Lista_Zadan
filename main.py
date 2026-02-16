@@ -87,7 +87,7 @@ class AddTaskDialog(DraggableMixin, QDialog):
         layout.addWidget(self.desc_input)
         layout.addWidget(self.buttons)
 
-        # Styl — dopasuj do swojego
+        # Styl
         self.setStyleSheet("""
             QDialog {
                 background-color: #1E1E1E;
@@ -288,7 +288,7 @@ class ListaZadan(DraggableMixin, QWidget):
     # Tworzy element listy z checkboxem (i możliwością edycji tekstu)
     def create_item(self, text, done=False, description=""):
         item = QListWidgetItem(text)
-        # Usunięto Qt.ItemIsEditable, aby podwójne kliknięcie otwierało dialog edycji zamiast edycji in-line
+        
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
         item.setCheckState(Qt.Checked if done else Qt.Unchecked)
         item.setData(Qt.UserRole, description)
@@ -390,7 +390,7 @@ class ListaZadan(DraggableMixin, QWidget):
         f.setStrikeOut(done)
         item.setFont(f)
 
-        # opcjonalnie: wyszarz ukończone
+        
         item.setForeground(QColor(100, 100, 100) if done else QColor(224, 224, 224))
 
 
