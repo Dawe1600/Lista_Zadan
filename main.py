@@ -1,13 +1,13 @@
 import sys
 import os
 import json
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout,
     QListWidget, QListWidgetItem, QInputDialog, QDialog, QDialogButtonBox, QLineEdit,
     QPlainTextEdit
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QStandardPaths
 
 
 class DraggableMixin:
@@ -90,35 +90,47 @@ class AddTaskDialog(DraggableMixin, QDialog):
         # Styl — dopasuj do swojego
         self.setStyleSheet("""
             QDialog {
-                color: white;
-                font-size: 16px;
-                background-color: rgba(0, 0, 0, 170);
-                border-radius: 10px;
-                padding: 12px;
+                background-color: #1E1E1E;
+                color: #E0E0E0;
+                border: 1px solid #333;
+                border-radius: 15px;
             }
-            QLabel { font-size: 18px; }
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                color: #FFFFFF;
+                margin-bottom: 5px;
+            }
             QLineEdit {
-                background-color: rgba(255, 255, 255, 30);
-                border: 1px solid rgba(255, 255, 255, 60);
+                background-color: #2D2D2D;
+                border: 1px solid #3E3E3E;
                 border-radius: 8px;
-                padding: 8px;
-                color: white;
+                padding: 10px;
+                color: #E0E0E0;
+                font-size: 14px;
             }
             QPlainTextEdit {
-                background-color: rgba(255, 255, 255, 30);
-                border: 1px solid rgba(255, 255, 255, 60);
+                background-color: #2D2D2D;
+                border: 1px solid #3E3E3E;
                 border-radius: 8px;
-                padding: 8px;
-                color: white;
+                padding: 10px;
+                color: #E0E0E0;
+                font-size: 14px;
             }
             QPushButton {
-                background-color: rgba(255, 255, 255, 25);
-                border: 1px solid rgba(255, 255, 255, 50);
+                background-color: #3A3A3A;
+                border: none;
                 border-radius: 8px;
-                padding: 8px 14px;
+                padding: 8px 16px;
+                color: white;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: rgba(255, 255, 255, 40);
+                background-color: #4A4A4A;
+            }
+            QPushButton:disabled {
+                background-color: #2A2A2A;
+                color: #555;
             }
         """)
 
@@ -143,11 +155,10 @@ class AddTaskDialog(DraggableMixin, QDialog):
         return self.input.text().strip(), self.desc_input.toPlainText().strip()
 
 class ListaZadan(DraggableMixin, QWidget):
-    # Plik z danymi — zapis obok skryptu
-    DATA_FILE = os.path.join(os.path.dirname(__file__), 'tasks.json')
-
     def __init__(self):
         super().__init__()
+        # Plik z danymi — zapis w Dokumentach
+        self.DATA_FILE = os.path.join(QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation), 'tasks.json')
         self.initUI()
         self.load_tasks_into_list()  # wczytaj zapisane zadania przy starcie
 
@@ -156,6 +167,16 @@ class ListaZadan(DraggableMixin, QWidget):
     def initUI(self):
         self.setWindowTitle('Lista Zadań')
         self.setGeometry(1500, 750, 400, 300)
+
+        # Ikona aplikacji (zielony ptaszek)
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setFont(QFont("Segoe UI Emoji", 40))
+        painter.setPen(QColor("#55ff55"))
+        painter.drawText(pixmap.rect(), Qt.AlignCenter, "✔")
+        painter.end()
+        self.setWindowIcon(QIcon(pixmap))
 
         # Bez ramek + zawsze na wierzchu
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint)
@@ -168,15 +189,17 @@ class ListaZadan(DraggableMixin, QWidget):
         title = QLabel("Zadania:")
         self.header.addWidget(title, alignment=Qt.AlignLeft)
 
+        self.header.addStretch()
+
         # przycisk usuń zaznaczone
-        self.del_btn = QPushButton("🗑")
+        self.del_btn = QPushButton("\U0001F5D1")
         self.del_btn.clicked.connect(self.usun_zaznaczone)
-        self.header.addWidget(self.del_btn, alignment=Qt.AlignRight)
+        self.header.addWidget(self.del_btn)
 
         # przycisk dodaj
-        self.add_btn = QPushButton('✏️')
+        self.add_btn = QPushButton("\u270F\uFE0F")
         self.add_btn.clicked.connect(self.dodaj_zadanie)
-        self.header.addWidget(self.add_btn, alignment=Qt.AlignRight)
+        self.header.addWidget(self.add_btn)
 
         # Lista zadań z checkboxami
         self.list = QListWidget()
@@ -191,9 +214,75 @@ class ListaZadan(DraggableMixin, QWidget):
         self.setLayout(self.root)
 
         self.setStyleSheet("""
-            color: white; font-size: 16px;
-            background-color: rgba(0, 0, 0, 100);
-            border-radius: 10px; padding: 10px;
+            QWidget {
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 14px;
+            }
+            ListaZadan {
+                background-color: #1E1E1E;
+                border: 1px solid #333;
+                border-radius: 15px;
+            }
+            QLabel {
+                color: #FFFFFF;
+                font-size: 18px;
+                font-weight: bold;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #2D2D2D;
+                border: 1px solid #3E3E3E;
+                border-radius: 8px;
+                color: #E0E0E0;
+                padding: 6px 12px;
+                font-size: 16px;
+                font-family: "Segoe UI Emoji";
+            }
+            QPushButton:hover {
+                background-color: #3E3E3E;
+                border-color: #4E4E4E;
+            }
+            QListWidget {
+                background-color: transparent;
+                border: none;
+                outline: none;
+                font-family: "Consolas", monospace;
+                font-size: 15px;
+            }
+            QListWidget::item {
+                background-color: #2D2D2D;
+                color: #E0E0E0;
+                border-radius: 8px;
+                margin-bottom: 4px;
+                padding: 8px;
+            }
+            QListWidget::item:hover {
+                background-color: #383838;
+            }
+            QListWidget::item:selected {
+                background-color: #404040;
+                border: 1px solid #555;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #3E3E3E;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #4E4E4E;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
         """)
 
     # Tworzy element listy z checkboxem (i możliwością edycji tekstu)
@@ -302,7 +391,7 @@ class ListaZadan(DraggableMixin, QWidget):
         item.setFont(f)
 
         # opcjonalnie: wyszarz ukończone
-        item.setForeground(QColor(170, 170, 170) if done else QColor(255, 255, 255))
+        item.setForeground(QColor(100, 100, 100) if done else QColor(224, 224, 224))
 
 
 if __name__ == '__main__':
