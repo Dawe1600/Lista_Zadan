@@ -20,3 +20,7 @@ Aplikacja ma **okno bez ramek** (frameless) oraz możliwość **przeciągania ok
 - 💾 Automatyczny zapis/odczyt w formacie **JSON**
 - 🎨 Ciemny motyw (dark UI) + emoji w ikonach/przyciskach
 - 🪟 Okno bez ramek + przeciąganie okna
+
+## 🚀 Uruchomienie
+
+Plik wykonywalny `.exe` znajduje się w głównym katalogu projektu.
