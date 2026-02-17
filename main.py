@@ -154,11 +154,192 @@ class AddTaskDialog(DraggableMixin, QDialog):
     def get_data(self):
         return self.input.text().strip(), self.desc_input.toPlainText().strip()
 
+class TaskDetailsDialog(DraggableMixin, QDialog):
+    def __init__(self, parent=None, text="", description=""):
+        super().__init__(parent)
+        self.setWindowTitle("Szczegóły zadania")
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+
+        # Nagłówek
+        header = QHBoxLayout()
+        title_lbl = QLabel("Szczegóły zadania")
+        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #FFF; border: none;")
+        
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(30, 30)
+        close_btn.clicked.connect(self.accept)
+        close_btn.setStyleSheet("background: transparent; color: #AAA; border: none; font-size: 16px;")
+        
+        header.addWidget(title_lbl)
+        header.addStretch()
+        header.addWidget(close_btn)
+
+        # Pola
+        lbl_task = QLabel("Zadanie:")
+        lbl_task.setStyleSheet("color: #CCC; font-size: 13px; font-weight: bold; margin-top: 10px;")
+        
+        self.task_view = QLineEdit(text)
+        self.task_view.setReadOnly(True)
+        
+        lbl_desc = QLabel("Opis:")
+        lbl_desc.setStyleSheet("color: #CCC; font-size: 13px; font-weight: bold; margin-top: 10px;")
+        
+        self.desc_view = QPlainTextEdit()
+        self.desc_view.setPlainText(description if description else "(Brak opisu)")
+        self.desc_view.setReadOnly(True)
+
+        # Przycisk Zamknij na dole
+        ok_btn = QPushButton("Zamknij")
+        ok_btn.clicked.connect(self.accept)
+
+        layout.addLayout(header)
+        layout.addWidget(lbl_task)
+        layout.addWidget(self.task_view)
+        layout.addWidget(lbl_desc)
+        layout.addWidget(self.desc_view)
+        layout.addWidget(ok_btn)
+
+        self.resize(350, 400)
+        
+        self.setStyleSheet("""
+            QDialog { background-color: #1E1E1E; border: 1px solid #333; border-radius: 15px; }
+            QLabel { color: #FFFFFF; }
+            QLineEdit, QPlainTextEdit {
+                background-color: #252525; border: 1px solid #3E3E3E;
+                border-radius: 8px; padding: 10px; color: #FFFFFF; font-size: 15px;
+            }
+            QPushButton { background-color: #3A3A3A; border: none; border-radius: 8px; padding: 8px 16px; color: white; font-weight: bold; }
+            QPushButton:hover { background-color: #4A4A4A; }
+        """)
+
+        # Centrowanie na ekranie
+        geo = self.frameGeometry()
+        screen_geo = QApplication.desktop().availableGeometry(parent) if parent else QApplication.desktop().availableGeometry()
+        geo.moveCenter(screen_geo.center())
+        self.move(geo.topLeft())
+
+class CompletedTasksDialog(DraggableMixin, QDialog):
+    def __init__(self, parent=None, main_app=None):
+        super().__init__(parent)
+        self.main_app = main_app
+        self.setWindowTitle("Zakończone zadania")
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        
+        header = QHBoxLayout()
+        title = QLabel("Wykonane zadania:")
+        
+        # Przycisk usuwania wszystkich zakończonych
+        clear_btn = QPushButton("🗑")
+        clear_btn.setToolTip("Usuń wszystkie zakończone")
+        clear_btn.clicked.connect(self.clear_all_tasks)
+
+        close_btn = QPushButton("✕")
+        close_btn.clicked.connect(self.accept)
+        
+        header.addWidget(title)
+        header.addStretch()
+        header.addWidget(clear_btn)
+        header.addWidget(close_btn)
+
+        self.list = QListWidget()
+        self.list.itemChanged.connect(self.on_item_changed)
+        self.list.itemDoubleClicked.connect(self.show_task_details)
+        
+        # Menu kontekstowe (Prawy Przycisk Myszy)
+        self.list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self.show_context_menu)
+
+        layout.addLayout(header)
+        layout.addWidget(self.list)
+
+        # Wczytaj zadania z listy completed_tasks głównej aplikacji
+        self.load_items()
+
+        self.resize(400, 500)
+        # Styl (taki sam jak w głównej aplikacji)
+        self.setStyleSheet(parent.styleSheet())
+
+    def load_items(self):
+        self.list.blockSignals(True)
+        self.list.clear()
+        for task in self.main_app.completed_tasks:
+            item = QListWidgetItem(task['text'])
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            item.setCheckState(Qt.Checked)
+            item.setData(Qt.UserRole, task.get('description', ''))
+            
+            # Styl przekreślony
+            f = item.font()
+            f.setStrikeOut(True)
+            item.setFont(f)
+            item.setForeground(QColor(100, 100, 100))
+            
+            self.list.addItem(item)
+        self.list.blockSignals(False)
+
+    def on_item_changed(self, item):
+        # Jeśli użytkownik odznaczy zadanie w historii -> przywróć do głównych
+        if item.checkState() == Qt.Unchecked:
+            text = item.text()
+            desc = item.data(Qt.UserRole)
+            
+            # Usuń z listy completed_tasks i dodaj do głównej listy
+            self.main_app.restore_task(text, desc)
+            
+            # Usuń z tego widoku
+            self.list.takeItem(self.list.row(item))
+
+    def show_task_details(self, item):
+        text = item.text()
+        desc = item.data(Qt.UserRole) or ""
+        
+        # Otwieramy okno tylko do odczytu
+        dlg = TaskDetailsDialog(self, text, desc)
+        dlg.exec_()
+
+    def show_context_menu(self, pos):
+        item = self.list.itemAt(pos)
+        if not item:
+            return
+            
+        menu = QMenu(self)
+        restore_action = QAction("Przywróć", self)
+        delete_action = QAction("Usuń", self)
+        
+        # Przywracanie: wystarczy odznaczyć checkbox, co wywoła on_item_changed
+        restore_action.triggered.connect(lambda: item.setCheckState(Qt.Unchecked))
+        delete_action.triggered.connect(lambda: self.delete_item(item))
+        
+        menu.addAction(restore_action)
+        menu.addAction(delete_action)
+        
+        menu.exec_(self.list.mapToGlobal(pos))
+
+    def delete_item(self, item):
+        text = item.text()
+        self.main_app.completed_tasks = [t for t in self.main_app.completed_tasks if t['text'] != text]
+        self.list.takeItem(self.list.row(item))
+        self.main_app.save_tasks()
+
+    def clear_all_tasks(self):
+        self.main_app.completed_tasks = []
+        self.list.clear()
+        self.main_app.save_tasks()
+
 class ListaZadan(DraggableMixin, QWidget):
     def __init__(self):
         super().__init__()
         # Plik z danymi — zapis w Dokumentach
         self.DATA_FILE = os.path.join(QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation), 'tasks.json')
+        self.completed_tasks = [] # Lista słowników dla zadań wykonanych
         self.initUI()
         self.load_tasks_into_list()  # wczytaj zapisane zadania przy starcie
 
@@ -201,10 +382,10 @@ class ListaZadan(DraggableMixin, QWidget):
         self.settings_btn.clicked.connect(self.show_settings_menu)
         self.header.addWidget(self.settings_btn)
 
-        # przycisk usuń zaznaczone
-        self.del_btn = QPushButton("\U0001F5D1")
-        self.del_btn.clicked.connect(self.usun_zaznaczone)
-        self.header.addWidget(self.del_btn)
+        # przycisk pokaż zakończone (zamiast kosza)
+        self.history_btn = QPushButton("\u2714\uFE0F") # Checkmark emoji
+        self.history_btn.clicked.connect(self.pokaz_zakonczone)
+        self.header.addWidget(self.history_btn)
 
         # przycisk dodaj
         self.add_btn = QPushButton("\u270F\uFE0F")
@@ -344,26 +525,39 @@ class ListaZadan(DraggableMixin, QWidget):
                 self.list.blockSignals(False)
                 self.save_tasks()
 
-    def usun_zaznaczone(self):
-    # usuwamy od końca, żeby indeksy się nie rozjechały
-        self.list.blockSignals(True)
-        for i in range(self.list.count() - 1, -1, -1):
-            item = self.list.item(i)
-            if item.checkState() == Qt.Checked:
-                self.list.takeItem(i)
-        self.list.blockSignals(False)
-
-        self.save_tasks()
-
-
+    def pokaz_zakonczone(self):
+        dlg = CompletedTasksDialog(self, main_app=self)
+        dlg.exec_()
 
     # Reaguj na odhaczenie/edytowanie elementu -> zapisz
     def on_item_changed(self, item):
-        # zablokuj sygnały, bo ustawianie fontu/koloru też może triggerować itemChanged
-        self.list.blockSignals(True)
-        self.apply_done_style(item)
-        self.list.blockSignals(False)
+        # Jeśli zadanie zostało zaznaczone (wykonane) -> przenieś do completed_tasks
+        if item.checkState() == Qt.Checked:
+            self.list.blockSignals(True)
+            
+            # Dodaj do listy pamięci
+            self.completed_tasks.append({
+                'text': item.text(),
+                'done': True,
+                'description': item.data(Qt.UserRole) or ""
+            })
+            
+            # Usuń z widoku
+            row = self.list.row(item)
+            self.list.takeItem(row)
+            
+            self.list.blockSignals(False)
+        
+        self.save_tasks()
 
+    def restore_task(self, text, description):
+        # Metoda wywoływana przez okno historii, aby przywrócić zadanie
+        # Usuwamy z completed_tasks (szukamy po treści - uproszczenie)
+        self.completed_tasks = [t for t in self.completed_tasks if t['text'] != text]
+        
+        self.list.blockSignals(True)
+        self.list.addItem(self.create_item(text, done=False, description=description))
+        self.list.blockSignals(False)
         self.save_tasks()
 
     # Wczytanie z JSON -> odtworzenie listy
@@ -380,27 +574,37 @@ class ListaZadan(DraggableMixin, QWidget):
 
         self.list.blockSignals(True)
         self.list.clear()
+        self.completed_tasks = []
+        
         for t in tasks:
             text = t.get('text', '')
             done = bool(t.get('done', False))
             desc = t.get('description', '')
             if text:
-                self.list.addItem(self.create_item(text, done, desc))
+                if done:
+                    self.completed_tasks.append(t)
+                else:
+                    self.list.addItem(self.create_item(text, done, desc))
         self.list.blockSignals(False)
 
     # Zbierz dane z listy -> zapisz do JSON
     def save_tasks(self):
-        tasks = []
+        # Zbieramy aktywne zadania z UI
+        active_tasks = []
         for i in range(self.list.count()):
             it = self.list.item(i)
-            tasks.append({
+            active_tasks.append({
                 'text': it.text(),
                 'done': (it.checkState() == Qt.Checked),
                 'description': it.data(Qt.UserRole) or ""
             })
+            
+        # Łączymy z zadaniami zakończonymi
+        all_tasks = active_tasks + self.completed_tasks
+        
         try:
             with open(self.DATA_FILE, 'w', encoding='utf-8') as f:
-                json.dump(tasks, f, ensure_ascii=False, indent=2)
+                json.dump(all_tasks, f, ensure_ascii=False, indent=2)
         except OSError as e:
             print(f'Błąd zapisu: {e}')
 
