@@ -23,6 +23,15 @@ Aplikacja ma **okno bez ramek** (frameless) oraz możliwość **przeciągania ok
 - ⚙️ Opcja **autostartu** z systemem Windows (w menu ustawień)
 - 🪟 Okno bez ramek + przeciąganie okna
 
+## 🧠 Konfiguracja AI (Google Gemini)
+
+Aby korzystać z funkcji asystenta AI, należy użyć własnego klucza Google API.
+1. Zdobądź klucz API z [Google AI Studio](https://aistudio.google.com/).
+2. Utwórz plik `secrets.py` w głównym katalogu projektu (plik jest ignorowany przez git) i wpisz:
+   ```python
+   GEMINI_API_KEY = "TWOJ_KLUCZ_API"
+   ```
+
 ## 🚀 Uruchomienie
 
 Plik wykonywalny `.exe` znajduje się w głównym katalogu projektu.
