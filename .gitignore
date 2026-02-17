@@ -1,0 +1,27 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# --- PyInstaller (Tworzenie EXE) ---
+# Te foldery są tworzone przy budowaniu EXE i nie powinny być w gicie
+build/
+dist/
+*.spec
+
+# --- Dane aplikacji ---
+# Nie chcemy wysyłać Twojej prywatnej listy zadań do sieci
+tasks.json
+
+# --- Środowisko i System ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Pliki tymczasowe PyQt ---
+# Jeśli zaczniesz używać Qt Designer (.ui), te pliki mogą się pojawić
+*.ui.py
