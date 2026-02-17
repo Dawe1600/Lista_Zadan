@@ -25,3 +25,10 @@ Thumbs.db
 # --- Pliki tymczasowe PyQt ---
 # Jeśli zaczniesz używać Qt Designer (.ui), te pliki mogą się pojawić
 *.ui.py
+
+#Moje api
+secrets.py
+
+#srodowisko
+pipfile
+pipfile.lock

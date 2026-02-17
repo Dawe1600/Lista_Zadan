@@ -5,6 +5,9 @@ from PyQt5.QtCore import Qt
 from styles import DIALOG_STYLE
 from PyQt5.QtGui import QColor
 from mixins import DraggableMixin
+from PyQt5.QtCore import QThread, pyqtSignal
+import google.generativeai as genai
+from secrets import GEMINI_API_KEY
 
 class AddTaskDialog(DraggableMixin, QDialog):
     def __init__(self, parent=None, text="", description=""):
@@ -237,3 +240,108 @@ class CompletedTasksDialog(DraggableMixin, QDialog):
         self.main_app.completed_tasks = []
         self.list.clear()
         self.main_app.save_tasks()
+
+class AIWorker(QThread):
+    """Wątek działający w tle, aby nie zamrażać GUI podczas zapytania do API"""
+    finished = pyqtSignal(str)
+    error = pyqtSignal(str)
+
+    def __init__(self, task_text, task_desc):
+        super().__init__()
+        self.task_text = task_text
+        self.task_desc = task_desc
+
+    def run(self):
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            
+            
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            
+            prompt = (
+                f"Jesteś asystentem produktywności. Użytkownik ma problem z następującym zadaniem: '{self.task_text}'. "
+                f"Opis zadania: '{self.task_desc}'. "
+                "Podaj 3 konkretne, krótkie kroki, jak rozwiązać ten problem lub jak zacząć. "
+                "Odpowiedź sformatuj w czytelnych punktach, bez zbędnego wstępu."
+            )
+            
+            response = model.generate_content(prompt)
+            self.finished.emit(response.text)
+            
+        except Exception as e:
+            self.error.emit(str(e))
+
+class AIDialog(DraggableMixin, QDialog):
+    def __init__(self, parent=None, task_text="", task_desc=""):
+        super().__init__(parent)
+        self.setStyleSheet(DIALOG_STYLE)
+        self.setWindowTitle("Asystent AI")
+        
+        # Ustawienia okna
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+        self.resize(400, 450)
+
+        layout = QVBoxLayout(self)
+
+        # Nagłówek
+        header = QHBoxLayout()
+        title_lbl = QLabel("🧠 Sugestie AI")
+        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #a29bfe; border: none;")
+        
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(30, 30)
+        close_btn.clicked.connect(self.reject) # Reject przerywa też wątek jeśli trwa
+        close_btn.setStyleSheet("background: transparent; color: #AAA; border: none; font-size: 16px;")
+        
+        header.addWidget(title_lbl)
+        header.addStretch()
+        header.addWidget(close_btn)
+
+        # Pole tekstowe na odpowiedź
+        self.response_area = QPlainTextEdit()
+        self.response_area.setReadOnly(True)
+        self.response_area.setPlaceholderText("Łączenie z AI...")
+        self.response_area.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: #252526; 
+                color: #dcdcdc; 
+                font-size: 14px; 
+                border: 1px solid #3E3E3E;
+            }
+        """)
+
+        # Przycisk Zamknij
+        ok_btn = QPushButton("Dzięki, rozumiem")
+        ok_btn.clicked.connect(self.accept)
+
+        layout.addLayout(header)
+        layout.addWidget(self.response_area)
+        layout.addWidget(ok_btn)
+
+        # Centrowanie
+        self.adjust_position(parent)
+
+        # Uruchomienie AI
+        self.start_ai_query(task_text, task_desc)
+
+    def adjust_position(self, parent):
+        geo = self.frameGeometry()
+        screen_geo = QApplication.desktop().availableGeometry(parent) if parent else QApplication.desktop().availableGeometry()
+        geo.moveCenter(screen_geo.center())
+        self.move(geo.topLeft())
+
+    def start_ai_query(self, text, desc):
+        self.response_area.setPlainText("🤖 Analizuję problem...\nProszę czekać.")
+        
+        self.worker = AIWorker(text, desc)
+        self.worker.finished.connect(self.display_result)
+        self.worker.error.connect(self.display_error)
+        self.worker.start()
+
+    def display_result(self, text):
+        self.response_area.setPlainText(text)
+
+    def display_error(self, error_msg):
+        self.response_area.setPlainText(f"Wystąpił błąd połączenia:\n{error_msg}")

@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+from dialogs import AddTaskDialog, TaskDetailsDialog, CompletedTasksDialog, AIDialog
 from styles import MAIN_STYLE
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate)
@@ -256,13 +257,43 @@ class ListaZadan(DraggableMixin, QWidget):
         item = self.list.itemAt(pos)
         if not item:
             return
+            
         menu = QMenu(self)
         is_problem = bool(item.data(Qt.UserRole + 1))
-        action = QAction("Usuń oznaczenie problemu" if is_problem else "Oznacz jako problem", self)
-        action.triggered.connect(lambda: self.toggle_problem(item))
-        menu.addAction(action)
+        
+        # 1. Opcja: Zapytaj AI (tylko jeśli to problem)
+        if is_problem:
+            ai_action = QAction("🧠 Zapytaj AI jak to rozwiązać", self)
+            ai_action.triggered.connect(lambda: self.ask_ai_solution(item))
+            menu.addAction(ai_action)
+            menu.addSeparator() # Linia oddzielająca
+
+        # 2. Opcja: Oznaczanie jako problem
+        problem_text = "Usuń oznaczenie problemu" if is_problem else "Oznacz jako problem"
+        toggle_action = QAction(problem_text, self)
+        toggle_action.triggered.connect(lambda: self.toggle_problem(item))
+        menu.addAction(toggle_action)
+        
+        # 3. Opcja: Usuń zadanie (opcjonalnie, skoro to menu kontekstowe)
+        delete_action = QAction("Usuń zadanie", self)
+        delete_action.triggered.connect(lambda: self.delete_task_from_context(item))
+        menu.addAction(delete_action)
+
         menu.exec_(self.list.mapToGlobal(pos))
 
     def toggle_problem(self, item):
         current = bool(item.data(Qt.UserRole + 1))
         item.setData(Qt.UserRole + 1, not current)
+
+    def ask_ai_solution(self, item):
+        text = item.text()
+        desc = item.data(Qt.UserRole) or ""
+        
+        # Otwieramy okno AI
+        dlg = AIDialog(self, text, desc)
+        dlg.exec_()
+
+    def delete_task_from_context(self, item):
+        row = self.list.row(item)
+        self.list.takeItem(row)
+        self.save_tasks()
