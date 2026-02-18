@@ -5,9 +5,27 @@ from PyQt5.QtCore import Qt
 from styles import DIALOG_STYLE
 from PyQt5.QtGui import QColor
 from mixins import DraggableMixin
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QSettings
 import google.generativeai as genai
-from secrets import GEMINI_API_KEY
+
+def get_api_key():
+    settings = QSettings("ToDoList", "ToDoWidgetApp")
+    
+    # 1. Najpierw sprawdzamy, czy AI jest w ogóle włączone (z instalatora)
+    # Domyślnie zwracamy 0 (False), jeśli wpisu nie ma
+    ai_enabled = bool(settings.value("EnableAI", 0, type=int))
+    
+    if not ai_enabled:
+        return None  # Jeśli użytkownik wyłączył AI, udajemy, że nie ma klucza
+
+    # 2. Jeśli włączone, pobieramy klucz
+    api_key = settings.value("GeminiApiKey", type=str)
+    
+    # Zwracamy klucz tylko jeśli nie jest pusty
+    if api_key and api_key.strip():
+        return api_key
+    
+    return None
 
 class AddTaskDialog(DraggableMixin, QDialog):
     def __init__(self, parent=None, text="", description=""):
@@ -241,8 +259,9 @@ class CompletedTasksDialog(DraggableMixin, QDialog):
         self.list.clear()
         self.main_app.save_tasks()
 
+
 class AIWorker(QThread):
-    """Wątek działający w tle, aby nie zamrażać GUI podczas zapytania do API"""
+
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
@@ -252,10 +271,22 @@ class AIWorker(QThread):
         self.task_desc = task_desc
 
     def run(self):
+        # 1. Pobieramy klucz z rejestru/ustawień
+        klucz = get_api_key()
+
+        # 2. Sprawdzamy czy klucz istnieje PRZED próbą połączenia
+        if not klucz:
+            self.error.emit(
+                "Brak klucza API! Aplikacja nie została skonfigurowana.\n"
+                "Uruchom instalator ponownie i podaj klucz."
+            )
+            return  # <--- Ważne: przerywamy, żeby nie spowodować crasha
+
         try:
-            genai.configure(api_key=GEMINI_API_KEY)
+            # 3. Konfiguracja biblioteki
+            genai.configure(api_key=klucz)
             
-            
+            # 4. Twój sprawdzony model
             model = genai.GenerativeModel('gemini-2.5-flash')
             
             prompt = (
@@ -265,11 +296,17 @@ class AIWorker(QThread):
                 "Odpowiedź sformatuj w czytelnych punktach, bez zbędnego wstępu."
             )
             
+            # Generowanie odpowiedzi
             response = model.generate_content(prompt)
-            self.finished.emit(response.text)
+            
+            if response and response.text:
+                self.finished.emit(response.text)
+            else:
+                self.error.emit("Model AI nie zwrócił odpowiedzi (pusta treść).")
             
         except Exception as e:
-            self.error.emit(str(e))
+            # Łapiemy błędy (np. brak internetu, błąd 404 modelu, limit tokenów)
+            self.error.emit(f"Błąd połączenia z AI:\n{str(e)}")
 
 class AIDialog(DraggableMixin, QDialog):
     def __init__(self, parent=None, task_text="", task_desc=""):

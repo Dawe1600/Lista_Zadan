@@ -91,6 +91,14 @@ class ListaZadan(DraggableMixin, QWidget):
         self.root.addWidget(self.list)
         self.setLayout(self.root)
 
+        self.ai_enabled = self.check_ai_status()
+    
+    def check_ai_status(self):
+        # Odczytujemy z tego samego miejsca co instalator
+        settings = QSettings("ToDoList", "ToDoWidgetApp")
+        # Zwraca 1 (True) lub 0 (False). Domyślnie 0 (False) jeśli brak wpisu.
+        return bool(settings.value("EnableAI", 0, type=int))
+
     # Tworzy element listy z checkboxem (i możliwością edycji tekstu)
     def create_item(self, text, done=False, description="", is_problem=False):
         item = QListWidgetItem(text)
@@ -256,12 +264,14 @@ class ListaZadan(DraggableMixin, QWidget):
         menu = QMenu(self)
         is_problem = bool(item.data(Qt.UserRole + 1))
         
-        # 1. Opcja: Zapytaj AI (tylko jeśli to problem)
-        if is_problem:
+        #   Opcja: Zapytaj AI (tylko jeśli to problem)
+        # 1. Czy zadanie jest problemem
+        # 2. Czy użytkownik włączył AI w instalatorze (self.ai_enabled)
+        if is_problem and self.ai_enabled:
             ai_action = QAction("🧠 Zapytaj AI jak to rozwiązać", self)
             ai_action.triggered.connect(lambda: self.ask_ai_solution(item))
             menu.addAction(ai_action)
-            menu.addSeparator() # Linia oddzielająca
+            menu.addSeparator()
 
         # 2. Opcja: Oznaczanie jako problem
         problem_text = "Usuń oznaczenie problemu" if is_problem else "Oznacz jako problem"
