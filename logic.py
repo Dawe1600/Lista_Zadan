@@ -4,7 +4,7 @@ import sys
 from dialogs import AddTaskDialog, TaskDetailsDialog, CompletedTasksDialog, AIDialog
 from styles import MAIN_STYLE
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate)
+                             QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate, QAbstractItemView)
 from PyQt5.QtCore import Qt, QStandardPaths, QSettings
 from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont, QPen
 
@@ -33,15 +33,13 @@ class ListaZadan(DraggableMixin, QWidget):
     def initUI(self):
         self.setWindowTitle('Lista Zadań')
         self.setGeometry(1500, 750, 400, 300)
-        self.setObjectName("MainWindow") # Dodane, żeby styl działał na konkretny widget
+        self.setObjectName("MainWindow")
         self.setStyleSheet(MAIN_STYLE)
 
-        # Ikona aplikacji (zielony ptaszek)
         icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
-            # Fallback: rysowanie dynamiczne, jeśli brak pliku
             pixmap = QPixmap(64, 64)
             pixmap.fill(Qt.transparent)
             painter = QPainter(pixmap)
@@ -51,9 +49,7 @@ class ListaZadan(DraggableMixin, QWidget):
             painter.end()
             self.setWindowIcon(QIcon(pixmap))
 
-        # Bez ramek + zawsze na wierzchu
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint)
-        # Jeśli chcesz przezroczyste tło, odkomentuj:
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.root = QVBoxLayout()
@@ -64,30 +60,29 @@ class ListaZadan(DraggableMixin, QWidget):
 
         self.header.addStretch()
 
-        # przycisk ustawienia (zębatka)
         self.settings_btn = QPushButton("⚙")
         self.settings_btn.clicked.connect(self.show_settings_menu)
         self.header.addWidget(self.settings_btn)
 
-        # przycisk pokaż zakończone (zamiast kosza)
-        self.history_btn = QPushButton("\u2714\uFE0F") # Checkmark emoji
+        self.history_btn = QPushButton("\u2714\uFE0F")
         self.history_btn.clicked.connect(self.pokaz_zakonczone)
         self.header.addWidget(self.history_btn)
 
-        # przycisk dodaj
         self.add_btn = QPushButton("\u270F\uFE0F")
         self.add_btn.clicked.connect(self.dodaj_zadanie)
         self.header.addWidget(self.add_btn)
 
-        # Lista zadań z checkboxami
         self.list = QListWidget()
         self.list.setWordWrap(True)
-        # Każda zmiana (odhaczenie/edycja tekstu) -> zapis do JSON
         self.list.itemChanged.connect(self.on_item_changed)
-        # Podwójne kliknięcie -> edycja (opis)
         self.list.itemDoubleClicked.connect(self.edytuj_zadanie)
         
-        # Menu kontekstowe i delegat (obramówka problemu)
+        # Drag & Drop
+        self.list.setDragDropMode(QAbstractItemView.InternalMove)
+        self.list.setDefaultDropAction(Qt.MoveAction)
+        self.list.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.list.model().rowsMoved.connect(lambda: self.save_tasks())
+
         self.list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self.show_context_menu)
         self.list.setItemDelegate(TaskDelegate(self.list))
