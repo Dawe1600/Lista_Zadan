@@ -1,37 +1,36 @@
-# Lista Zadań (PyQt5) ✅
+# 📝 Lista Zadań AI (To-Do List AI)
 
-Prosta, lekka aplikacja desktopowa w **Python + PyQt5** do zarządzania listą zadań (to‑do) z możliwością:
-- dodawania zadań,
-- oznaczania jako wykonane (checkbox + przekreślenie),
-- edycji zadania oraz opisu po dwukliku,
-- usuwania wykonanych zadań,
-- opcjonalnego uruchamiania wraz ze startem systemu (Windows),
-- automatycznego zapisu do pliku `tasks.json` w katalogu **Dokumenty** użytkownika.
+Nowoczesna, desktopowa aplikacja do zarządzania zadaniami (To-Do) stworzona w języku Python przy użyciu biblioteki **PyQt5**. Aplikacja wyróżnia się minimalistycznym, ciemnym interfejsem (Dark Mode) oraz wbudowanym **Asystentem AI** (napędzanym przez Google Gemini), który pomaga w rozwiązywaniu najtrudniejszych zadań.
 
-Aplikacja ma **okno bez ramek** (frameless) oraz możliwość **przeciągania okna myszką** (z wyłączeniem interaktywnych kontrolek, np. pól tekstowych i przycisków).
+![Lista Zadań AI - Screenshot] (TodoListAI.png) *(Wskazówka: wrzuć tu zrzut ekranu aplikacji)*
 
----
+## ✨ Główne funkcje
 
-## ✨ Funkcje
+* **Wsparcie AI (Google Gemini):** Oznacz zadanie jako "problem", kliknij prawym przyciskiem myszy i poproś AI o wygenerowanie 3 konkretnych kroków do jego rozwiązania.
+* **Drag & Drop:** Wygodnie zmieniaj kolejność zadań chwytając je i upuszczając (interaktywny kursor rączki).
+* **Nowoczesny Interfejs (Frameless):** Brak standardowych ramek systemu Windows. Okno można swobodnie przeciągać po ekranie, chwytając za dowolne puste miejsce.
+* **Zarządzanie Zadaniami:** Dodawanie, edycja, usuwanie i opcjonalne dodawanie dłuższych opisów.
+* **Historia Zadań:** Dedykowany widok dla ukończonych zadań z opcją ich łatwego przywracania.
+* **Autostart:** Możliwość uruchamiania aplikacji wraz ze startem systemu Windows.
 
-- ✅ Lista zadań z checkboxami (wykonane / niewykonane)
-- 📝 Dodawanie zadania + opcjonalny opis
-- ✏️ Edycja zadania i opisu po **podwójnym kliknięciu**
-- 🗑️ Usuwanie wszystkich **zaznaczonych (wykonanych)** zadań jednym przyciskiem
-- 💾 Automatyczny zapis/odczyt w formacie **JSON**
-- 🎨 Ciemny motyw (dark UI) + emoji w ikonach/przyciskach
-- ⚙️ Opcja **autostartu** z systemem Windows (w menu ustawień)
-- 🪟 Okno bez ramek + przeciąganie okna
+## 📥 Instalacja (Dla użytkowników)
 
-## 🧠 Konfiguracja AI (Google Gemini)
+Nie musisz znać Pythona, aby korzystać z tej aplikacji!
+1. Przejdź do zakładki **[Releases](../../releases)** po prawej stronie repozytorium.
+2. Pobierz najnowszy plik `Instalator_ListyZadan.exe`.
+3. Uruchom instalator. W trakcie instalacji zostaniesz zapytany, czy chcesz włączyć funkcje AI.
+4. Jeśli wybierzesz "Tak", wklej swój darmowy klucz **Google Gemini API** (możesz go wygenerować w [Google AI Studio](https://aistudio.google.com/)).
+5. Gotowe! Aplikacja jest gotowa do pracy.
 
-Aby korzystać z funkcji asystenta AI, należy użyć własnego klucza Google API.
-1. Zdobądź klucz API z [Google AI Studio](https://aistudio.google.com/).
-2. Utwórz plik `secrets.py` w głównym katalogu projektu (plik jest ignorowany przez git) i wpisz:
-   ```python
-   GEMINI_API_KEY = "TWOJ_KLUCZ_API"
-   ```
+## 🛠️ Dla programistów (Uruchamianie ze źródeł)
 
-## 🚀 Uruchomienie
+Jeśli chcesz zmodyfikować kod i uruchomić aplikację lokalnie na swoim komputerze:
 
-Plik wykonywalny `.exe` znajduje się w głównym katalogu projektu.
+### 1. Wymagania
+* Python 3.8+
+* System operacyjny: Windows (aplikacja korzysta z Rejestru Windows do zapisu ustawień).
+
+### 2. Sklonuj repozytorium
+```bash
+git clone [https://github.com/TWOJ_NICK/lista_zadan.git](https://github.com/Dawe1600/lista_zadan.git)
+cd lista_zadan
