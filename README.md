@@ -2,7 +2,7 @@
 
 Nowoczesna, desktopowa aplikacja do zarządzania zadaniami (To-Do) stworzona w języku Python przy użyciu biblioteki **PyQt5**. Aplikacja wyróżnia się minimalistycznym, ciemnym interfejsem (Dark Mode) oraz wbudowanym **Asystentem AI** (napędzanym przez Google Gemini), który pomaga w rozwiązywaniu najtrudniejszych zadań.
 
-[Lista Zadań AI - Screenshot] (TodoListAI.png)
+C:\Programowanie\lista_zadan\ToDoListAi.png
 
 ## ✨ Główne funkcje
 
@@ -16,21 +16,29 @@ Nowoczesna, desktopowa aplikacja do zarządzania zadaniami (To-Do) stworzona w j
 ## 📥 Instalacja (Dla użytkowników)
 
 Nie musisz znać Pythona, aby korzystać z tej aplikacji!
-1. Przejdź do zakładki **[Releases](../../releases)** po prawej stronie repozytorium.
+1. Przejdź do zakładki **[Releases](../../releases)** po prawej stronie repozytorium na GitHubie.
 2. Pobierz najnowszy plik `Instalator_ListyZadan.exe`.
 3. Uruchom instalator. W trakcie instalacji zostaniesz zapytany, czy chcesz włączyć funkcje AI.
 4. Jeśli wybierzesz "Tak", wklej swój darmowy klucz **Google Gemini API** (możesz go wygenerować w [Google AI Studio](https://aistudio.google.com/)).
-5. Gotowe! Aplikacja jest gotowa do pracy.
+5. Gotowe! Aplikacja zainstaluje się i jest gotowa do pracy.
 
-## 🛠️ Dla programistów (Uruchamianie ze źródeł)
+---
 
-Jeśli chcesz zmodyfikować kod i uruchomić aplikację lokalnie na swoim komputerze:
+## 🛠️ Dla programistów (Uruchamianie i kompilacja)
 
-### 1. Wymagania
+Jeśli chcesz zmodyfikować kod, uruchomić aplikację lokalnie ze źródeł lub samodzielnie ją skompilować, postępuj zgodnie z poniższymi krokami.
+
+### 1. Wymagania i uruchomienie ze źródeł
 * Python 3.8+
 * System operacyjny: Windows (aplikacja korzysta z Rejestru Windows do zapisu ustawień).
 
-### 2. Sklonuj repozytorium
 ```bash
-git clone [https://github.com/TWOJ_NICK/lista_zadan.git](https://github.com/Dawe1600/lista_zadan.git)
+# Sklonuj repozytorium
+git clone [https://github.com/TWOJ_NICK/lista_zadan.git](https://github.com/TWOJ_NICK/lista_zadan.git)
 cd lista_zadan
+
+# Zainstaluj zależności
+pip install PyQt5 google-generativeai
+
+# Uruchom aplikację
+python main.py
