@@ -34,8 +34,7 @@ Jeśli chcesz zmodyfikować kod, uruchomić aplikację lokalnie ze źródeł lub
 
 ```bash
 # Sklonuj repozytorium
-git clone [https://github.com/TWOJ_NICK/lista_zadan.git](https://github.com/TWOJ_NICK/lista_zadan.git)
-cd lista_zadan
+git clone https://github.com/Dawe1600/lista_zadan.git
 
 # Zainstaluj zależności
 pip install PyQt5 google-generativeai
