@@ -2,7 +2,7 @@
 
 Nowoczesna, desktopowa aplikacja do zarządzania zadaniami (To-Do) stworzona w języku Python przy użyciu biblioteki **PyQt5**. Aplikacja wyróżnia się minimalistycznym, ciemnym interfejsem (Dark Mode) oraz wbudowanym **Asystentem AI** (napędzanym przez Google Gemini), który pomaga w rozwiązywaniu najtrudniejszych zadań.
 
-C:\Programowanie\lista_zadan\ToDoListAi.png
+<img width="423" height="243" alt="ToDoListAi" src="https://github.com/user-attachments/assets/9da27445-49ec-4a6c-9b5b-1cfe2a83b819" />
 
 ## ✨ Główne funkcje
 
