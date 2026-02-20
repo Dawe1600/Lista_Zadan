@@ -34,5 +34,5 @@ pipfile
 pipfile.lock
 
 #Instalator
-Output
+Output/
 Skrypt.iss

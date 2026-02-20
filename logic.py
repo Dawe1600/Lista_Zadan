@@ -1,7 +1,7 @@
 import os
 import json
 import sys
-from dialogs import AddTaskDialog, TaskDetailsDialog, CompletedTasksDialog, AIDialog
+from dialogs import AddTaskDialog, CompletedTasksDialog, AIDialog
 from styles import MAIN_STYLE
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate, QAbstractItemView)
@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QStandardPaths, QSettings
 from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont, QPen
 
 from mixins import DraggableMixin
-from dialogs import AddTaskDialog, TaskDetailsDialog, CompletedTasksDialog
+from dialogs import AddTaskDialog, CompletedTasksDialog
 
 class TaskDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
