@@ -27,7 +27,7 @@ Thumbs.db
 *.ui.py
 
 #Moje api
-secrets.py
+api_secrets.py
 
 #srodowisko
 pipfile
@@ -36,3 +36,8 @@ pipfile.lock
 #Instalator
 Output/
 Skrypt.iss
+.env
+
+AGENTS.md
+token_cache.bin
+test_sync.py

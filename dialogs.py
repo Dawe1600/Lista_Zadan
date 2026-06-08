@@ -6,9 +6,16 @@ from styles import DIALOG_STYLE
 from PyQt5.QtGui import QColor
 from mixins import DraggableMixin
 from PyQt5.QtCore import QThread, pyqtSignal, QSettings
-import google.generativeai as genai
+from google import genai
+import os
+from dotenv import load_dotenv
 
 def get_api_key():
+    load_dotenv()
+    env_key = os.getenv("GEMINI_API_KEY")
+    if env_key:
+        return env_key
+        
     settings = QSettings("ToDoList", "ToDoWidgetApp")
     
     # 1. Najpierw sprawdzamy, czy AI jest w ogóle włączone (z instalatora)
@@ -284,10 +291,7 @@ class AIWorker(QThread):
 
         try:
             # 3. Konfiguracja biblioteki
-            genai.configure(api_key=klucz)
-            
-            # 4. Twój sprawdzony model
-            model = genai.GenerativeModel('gemini-2.5-flash')
+            client = genai.Client(api_key=klucz)
             
             prompt = (
                 f"Jesteś asystentem produktywności. Użytkownik ma problem z następującym zadaniem: '{self.task_text}'. "
@@ -297,7 +301,10 @@ class AIWorker(QThread):
             )
             
             # Generowanie odpowiedzi
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model='gemini-3.1-flash-lite',
+                contents=prompt
+            )
             
             if response and response.text:
                 self.finished.emit(response.text)

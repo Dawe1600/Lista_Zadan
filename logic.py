@@ -4,12 +4,13 @@ import sys
 from dialogs import AddTaskDialog, CompletedTasksDialog, AIDialog
 from styles import MAIN_STYLE
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate, QAbstractItemView)
-from PyQt5.QtCore import Qt, QStandardPaths, QSettings
+                             QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate, QAbstractItemView, QMessageBox)
+from PyQt5.QtCore import Qt, QStandardPaths, QSettings, QThread, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont, QPen
 
 from mixins import DraggableMixin
-from dialogs import AddTaskDialog, CompletedTasksDialog
+from dialogs import AddTaskDialog, CompletedTasksDialog, AIDialog
+from planner_api import PlannerSync
 
 class TaskDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -21,6 +22,18 @@ class TaskDelegate(QStyledItemDelegate):
             rect = option.rect.adjusted(1, 1, -1, -1)
             painter.drawRoundedRect(rect, 8, 8)
             painter.restore()
+
+class PlannerSyncWorker(QThread):
+    finished = pyqtSignal(list)
+    error = pyqtSignal(str)
+
+    def run(self):
+        try:
+            sync = PlannerSync()
+            tasks = sync.get_my_planner_tasks()
+            self.finished.emit(tasks)
+        except Exception as e:
+            self.error.emit(str(e))
 
 class ListaZadan(DraggableMixin, QWidget):
     def __init__(self):
@@ -64,18 +77,23 @@ class ListaZadan(DraggableMixin, QWidget):
         self.settings_btn.clicked.connect(self.show_settings_menu)
         self.header.addWidget(self.settings_btn)
 
+        self.sync_btn = QPushButton("🔄")
+        self.sync_btn.clicked.connect(self.sync_planner_tasks)
+        self.sync_btn.setToolTip("Synchronizuj z MS Planner")
+        self.header.addWidget(self.sync_btn)
+
         self.history_btn = QPushButton("\u2714\uFE0F")
-        self.history_btn.clicked.connect(self.pokaz_zakonczone)
+        self.history_btn.clicked.connect(self.show_completed_tasks)
         self.header.addWidget(self.history_btn)
 
         self.add_btn = QPushButton("\u270F\uFE0F")
-        self.add_btn.clicked.connect(self.dodaj_zadanie)
+        self.add_btn.clicked.connect(self.add_task)
         self.header.addWidget(self.add_btn)
 
         self.list = QListWidget()
         self.list.setWordWrap(True)
         self.list.itemChanged.connect(self.on_item_changed)
-        self.list.itemDoubleClicked.connect(self.edytuj_zadanie)
+        self.list.itemDoubleClicked.connect(self.edit_task)
         
         # Drag & Drop
         self.list.setDragDropMode(QAbstractItemView.InternalMove)
@@ -100,21 +118,41 @@ class ListaZadan(DraggableMixin, QWidget):
         return bool(settings.value("EnableAI", 0, type=int))
 
     # Tworzy element listy z checkboxem (i możliwością edycji tekstu)
-    def create_item(self, text, done=False, description="", is_problem=False):
+    def create_item(self, text, done=False, description="", is_problem=False, planner_id=None):
         item = QListWidgetItem(text)
         
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-        item.setCheckState(Qt.Checked if done else Qt.Unchecked)
+        flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        if not planner_id:
+            flags |= Qt.ItemIsUserCheckable
+        item.setFlags(flags)
+        
+        if not planner_id:
+            item.setCheckState(Qt.Checked if done else Qt.Unchecked)
+            
         item.setData(Qt.UserRole, description)
         item.setData(Qt.UserRole + 1, is_problem)
-        if description:
-            item.setToolTip(description)
+        item.setData(Qt.UserRole + 2, planner_id)
+        
+        tt = description
+        if planner_id:
+            tt = f"[Planner] {tt}" if tt else "[Zadanie z MS Planner]"
+        if tt:
+            item.setToolTip(tt)
 
         self.apply_done_style(item)
+        
+        if planner_id:
+            item.setForeground(QColor("#a29bfe"))
+            if done:
+                f = item.font()
+                f.setStrikeOut(True)
+                item.setFont(f)
+                item.setForeground(QColor("#635e9c"))
+        
         return item
 
     # Dodawanie nowego zadania
-    def dodaj_zadanie(self):
+    def add_task(self):
         dlg = AddTaskDialog(self)
         if dlg.exec_() == QDialog.Accepted:
             text, desc = dlg.get_data()
@@ -124,7 +162,7 @@ class ListaZadan(DraggableMixin, QWidget):
                 self.list.blockSignals(False)
                 self.save_tasks()
 
-    def edytuj_zadanie(self, item):
+    def edit_task(self, item):
         text = item.text()
         description = item.data(Qt.UserRole) or ""
         dlg = AddTaskDialog(self, text, description)
@@ -138,7 +176,7 @@ class ListaZadan(DraggableMixin, QWidget):
                 self.list.blockSignals(False)
                 self.save_tasks()
 
-    def pokaz_zakonczone(self):
+    def show_completed_tasks(self):
         dlg = CompletedTasksDialog(self, main_app=self)
         dlg.exec_()
 
@@ -194,11 +232,12 @@ class ListaZadan(DraggableMixin, QWidget):
             done = bool(t.get('done', False))
             desc = t.get('description', '')
             is_problem = bool(t.get('is_problem', False))
+            planner_id = t.get('planner_id')
             if text:
-                if done:
+                if done and not planner_id:
                     self.completed_tasks.append(t)
                 else:
-                    self.list.addItem(self.create_item(text, done, desc, is_problem))
+                    self.list.addItem(self.create_item(text, done, desc, is_problem, planner_id))
         self.list.blockSignals(False)
 
     # Zbierz dane z listy -> zapisz do JSON
@@ -209,9 +248,10 @@ class ListaZadan(DraggableMixin, QWidget):
             it = self.list.item(i)
             active_tasks.append({
                 'text': it.text(),
-                'done': (it.checkState() == Qt.Checked),
+                'done': (it.checkState() == Qt.Checked) if not it.data(Qt.UserRole + 2) else False,
                 'description': it.data(Qt.UserRole) or "",
-                'is_problem': bool(it.data(Qt.UserRole + 1))
+                'is_problem': bool(it.data(Qt.UserRole + 1)),
+                'planner_id': it.data(Qt.UserRole + 2)
             })
             
         # Łączymy z zadaniami zakończonymi
@@ -224,6 +264,9 @@ class ListaZadan(DraggableMixin, QWidget):
             print(f'Błąd zapisu: {e}')
 
     def apply_done_style(self, item: QListWidgetItem):
+        if item.data(Qt.UserRole + 2):
+            return # Styl zadań plannera nakładany jest w create_item
+            
         done = (item.checkState() == Qt.Checked)
 
         f = item.font()
@@ -302,3 +345,55 @@ class ListaZadan(DraggableMixin, QWidget):
         row = self.list.row(item)
         self.list.takeItem(row)
         self.save_tasks()
+
+    def sync_planner_tasks(self):
+        self.sync_btn.setEnabled(False)
+        self.sync_btn.setText("⏳")
+        self.worker = PlannerSyncWorker()
+        self.worker.finished.connect(self.on_sync_finished)
+        self.worker.error.connect(self.on_sync_error)
+        self.worker.start()
+
+    def on_sync_finished(self, planner_tasks):
+        self.sync_btn.setEnabled(True)
+        self.sync_btn.setText("🔄")
+        
+        # Oczyszczamy obecne zadania z Plannera, zachowując lokalne
+        local_tasks = []
+        for i in range(self.list.count()):
+            it = self.list.item(i)
+            if not it.data(Qt.UserRole + 2):
+                local_tasks.append({
+                    'text': it.text(),
+                    'done': it.checkState() == Qt.Checked,
+                    'description': it.data(Qt.UserRole) or "",
+                    'is_problem': bool(it.data(Qt.UserRole + 1))
+                })
+
+        self.list.blockSignals(True)
+        self.list.clear()
+        
+        # Przywracamy lokalne
+        for t in local_tasks:
+            self.list.addItem(self.create_item(t['text'], t['done'], t['description'], t['is_problem']))
+            
+        # Dodajemy pobrane z Plannera
+        for pt in planner_tasks:
+            title = pt.get('title', 'Bez nazwy')
+            planner_id = pt.get('id')
+            percent = pt.get('percentComplete', 0)
+            done = (percent == 100)
+            
+            # W Plannerze często brak rozbudowanego opisu bez dodatkowego żądania, ale bierzemy co jest
+            # Lub można nie dodawać ukończonych zadań do widoku
+            if not done:
+                self.list.addItem(self.create_item(title, done=done, description="", is_problem=False, planner_id=planner_id))
+            
+        self.list.blockSignals(False)
+        self.save_tasks()
+        QMessageBox.information(self, "Synchronizacja", "Zadania z MS Planner zostały zsynchronizowane.")
+
+    def on_sync_error(self, err):
+        self.sync_btn.setEnabled(True)
+        self.sync_btn.setText("🔄")
+        QMessageBox.warning(self, "Błąd synchronizacji", f"Wystąpił błąd:\n{err}")
