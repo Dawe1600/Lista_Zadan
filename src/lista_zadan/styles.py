@@ -101,7 +101,7 @@ MAIN_STYLE = """
         color: #E0E0E0;
         border-radius: 8px;
         margin-bottom: 4px;
-        padding: 8px;
+        padding: 0px;
     }
     QListWidget::item:hover {
         background-color: #383838;

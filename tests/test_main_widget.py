@@ -9,6 +9,7 @@ if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton
 
 from lista_zadan.app_settings import AppSettings, InMemorySettingsBackend
@@ -199,6 +200,35 @@ class TestMainWidget(unittest.TestCase):
         # Triggering toggle important from context menu updates store and widget
         menu.actions()[2].trigger()
         self.assertFalse(store.get("1").is_important)
+
+    def test_widget_paints_dark_background_and_rows_fit_without_clipping(self):
+        widget, _, _ = self._make_widget(
+            initial_tasks=[
+                {
+                    "id": "1",
+                    "text": "WSU437 / Złożyć zaświadczenie o statusie studenta na semestr zimowy",
+                    "description": "Wysłać do Działu Nauczania zaświadczenie potwierdzające status studenta",
+                    "is_important": True,
+                }
+            ],
+            ai_enabled=True,
+        )
+        widget.show()
+        self._app.processEvents()
+
+        # 1. MainWindow background must paint #1e1e1e (not stay transparent/unpainted)
+        img = widget.grab().toImage()
+        self.assertEqual(QColor(img.pixel(20, 20)).name(), "#1e1e1e")
+
+        # 2. Row quick actions must fit inside the list viewport without horizontal clipping
+        item = widget.list.item(0)
+        row = widget.list.itemWidget(item)
+        vp = widget.list.viewport().rect()
+        del_btn = row.findChild(QPushButton, "DeleteBtn")
+        self.assertLessEqual(del_btn.geometry().right(), vp.right())
+
+        # 3. Row height must not clip title/description vertically
+        self.assertGreaterEqual(row.height(), row.sizeHint().height())
 
 
 if __name__ == "__main__":

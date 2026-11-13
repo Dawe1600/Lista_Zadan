@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtCore import Qt, QStandardPaths
+from PyQt5.QtCore import QSize, Qt, QStandardPaths
 from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QAbstractItemView,
@@ -13,6 +13,9 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QMenu,
     QPushButton,
+    QSizePolicy,
+    QStyle,
+    QStyleOption,
     QStyledItemDelegate,
     QVBoxLayout,
     QWidget,
@@ -64,7 +67,7 @@ class ListaZadan(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Lista Zadań")
-        self.setGeometry(1500, 750, 400, 300)
+        self.setGeometry(1500, 750, 420, 340)
         self.setObjectName("MainWindow")
         self.setStyleSheet(MAIN_STYLE)
 
@@ -110,6 +113,8 @@ class ListaZadan(QWidget):
 
         self.list = QListWidget()
         self.list.setWordWrap(True)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.list.setResizeMode(QListWidget.Adjust)
         self.list.itemChanged.connect(self.on_item_changed)
         self.list.itemDoubleClicked.connect(self.edytuj_zadanie)
 
@@ -174,6 +179,7 @@ class ListaZadan(QWidget):
         title_lbl = QLabel(task.text)
         title_lbl.setObjectName("TaskTitleLabel")
         title_lbl.setWordWrap(True)
+        title_lbl.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         body.addWidget(title_lbl)
 
         if task.description:
@@ -183,6 +189,7 @@ class ListaZadan(QWidget):
                 preview = first_line[:60] + ("…" if len(first_line) > 60 else "")
                 desc_lbl = QLabel(preview)
                 desc_lbl.setObjectName("TaskDescLabel")
+                desc_lbl.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
                 desc_lbl.setToolTip(task.description)
                 body.addWidget(desc_lbl)
 
@@ -249,19 +256,50 @@ class ListaZadan(QWidget):
         self.store.complete(task_id)
         self.render_active_tasks()
 
+    def paintEvent(self, event):
+        opt = QStyleOption()
+        opt.initFrom(self)
+        painter = QPainter(self)
+        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
+
     def render_active_tasks(self):
         active = self.store.active_tasks()
         self.count_label.setText(str(len(active)))
         self.list.blockSignals(True)
         self.list.clear()
         total = len(active)
+        vp_width = self.list.viewport().width()
+        if vp_width <= 0:
+            vp_width = max(self.width() - 32, 200)
         for index, task in enumerate(active):
             item = self.create_item(task)
             row_widget = self._create_row_widget(task, index, total)
-            item.setSizeHint(row_widget.sizeHint())
+            row_widget.setFixedWidth(vp_width)
+            row_widget.adjustSize()
+            item.setSizeHint(QSize(vp_width, row_widget.sizeHint().height() + 4))
             self.list.addItem(item)
             self.list.setItemWidget(item, row_widget)
         self.list.blockSignals(False)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._sync_row_sizes()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._sync_row_sizes()
+
+    def _sync_row_sizes(self):
+        vp_width = self.list.viewport().width()
+        if vp_width <= 0:
+            return
+        for i in range(self.list.count()):
+            item = self.list.item(i)
+            row_widget = self.list.itemWidget(item)
+            if row_widget is not None:
+                row_widget.setFixedWidth(vp_width)
+                row_widget.adjustSize()
+                item.setSizeHint(QSize(vp_width, row_widget.sizeHint().height() + 4))
 
     def dodaj_zadanie(self):
         dlg = AddTaskDialog(self)
