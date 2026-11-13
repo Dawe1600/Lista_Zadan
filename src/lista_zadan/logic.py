@@ -254,6 +254,19 @@ class ListaZadan(QWidget):
         self.store.complete(task_id)
         self.render_active_tasks()
 
+    def _compute_row_height(self, row_widget: QWidget, vp_width: int) -> int:
+        row_widget.ensurePolished()
+        row_widget.setFixedWidth(vp_width)
+        layout = row_widget.layout()
+        if layout is not None:
+            layout.invalidate()
+            layout.activate()
+            if layout.hasHeightForWidth():
+                h = layout.totalHeightForWidth(vp_width)
+                if h > 0:
+                    return h
+        return row_widget.sizeHint().height()
+
     def render_active_tasks(self):
         active = self.store.active_tasks()
         self.count_label.setText(str(len(active)))
@@ -266,11 +279,10 @@ class ListaZadan(QWidget):
         for index, task in enumerate(active):
             item = self.create_item(task)
             row_widget = self._create_row_widget(task, index, total)
-            row_widget.setFixedWidth(vp_width)
-            row_widget.adjustSize()
-            item.setSizeHint(QSize(vp_width, row_widget.sizeHint().height() + 4))
             self.list.addItem(item)
             self.list.setItemWidget(item, row_widget)
+            row_height = self._compute_row_height(row_widget, vp_width)
+            item.setSizeHint(QSize(vp_width, row_height + 4))
         self.list.blockSignals(False)
 
     def resizeEvent(self, event):
@@ -279,7 +291,7 @@ class ListaZadan(QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
-        self._sync_row_sizes()
+        self.render_active_tasks()
 
     def _sync_row_sizes(self):
         vp_width = self.list.viewport().width()
@@ -289,9 +301,8 @@ class ListaZadan(QWidget):
             item = self.list.item(i)
             row_widget = self.list.itemWidget(item)
             if row_widget is not None:
-                row_widget.setFixedWidth(vp_width)
-                row_widget.adjustSize()
-                item.setSizeHint(QSize(vp_width, row_widget.sizeHint().height() + 4))
+                row_height = self._compute_row_height(row_widget, vp_width)
+                item.setSizeHint(QSize(vp_width, row_height + 4))
 
     def dodaj_zadanie(self):
         dlg = AddTaskDialog(self)

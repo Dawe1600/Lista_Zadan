@@ -225,8 +225,28 @@ class TestMainWidget(unittest.TestCase):
         del_btn = row.findChild(QPushButton, "DeleteBtn")
         self.assertLessEqual(del_btn.geometry().right(), vp.right())
 
-        # 3. Row height must not clip title/description vertically
-        self.assertGreaterEqual(row.height(), row.sizeHint().height())
+        # 3. Row height must not clip title/description vertically at its rendered width
+        self.assertGreaterEqual(row.height(), row.layout().totalHeightForWidth(row.width()))
+
+    def test_initial_show_row_height_matches_rerender_without_oversized_gap(self):
+        widget, _, _ = self._make_widget(
+            initial_tasks=[
+                {
+                    "id": "1",
+                    "text": "Wysłać zaświadczenie o statusie studenta do Salusa",
+                    "description": "Wysłać do CM Salus zaświadczenie potwierdzające",
+                }
+            ]
+        )
+        widget.show()
+        self._app.processEvents()
+        initial_height = widget.list.visualItemRect(widget.list.item(0)).height()
+
+        widget.render_active_tasks()
+        self._app.processEvents()
+        rerender_height = widget.list.visualItemRect(widget.list.item(0)).height()
+
+        self.assertEqual(initial_height, rerender_height)
 
 
 if __name__ == "__main__":
