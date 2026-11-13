@@ -1,8 +1,13 @@
 import os
+import sys
 import tempfile
 import unittest
 
-from task_store import InMemoryTaskRepository, JsonTaskRepository, TaskStore
+_SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+from lista_zadan.task_store import InMemoryTaskRepository, JsonTaskRepository, TaskStore
 
 
 class TestTaskStore(unittest.TestCase):
@@ -25,6 +30,20 @@ class TestTaskStore(unittest.TestCase):
         reloaded = TaskStore(repo)
         self.assertEqual(reloaded.get(task.id).text, "Kupić chleb")
         self.assertEqual(reloaded.get(task.id).description, "razowy")
+
+    def test_add_and_update_with_is_important(self):
+        repo = InMemoryTaskRepository()
+        store = TaskStore(repo)
+
+        task = store.add("Pilny raport", "Do piątku", is_important=True)
+        self.assertTrue(task.is_important)
+
+        reloaded = TaskStore(repo)
+        self.assertTrue(reloaded.get(task.id).is_important)
+
+        store.update(task.id, "Pilny raport", "Przełożony", is_important=False)
+        reloaded = TaskStore(repo)
+        self.assertFalse(reloaded.get(task.id).is_important)
 
     def test_duplicate_titles_do_not_collide_on_restore_or_delete(self):
         repo = InMemoryTaskRepository()

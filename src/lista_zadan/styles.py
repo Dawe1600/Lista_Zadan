@@ -28,6 +28,28 @@ MAIN_STYLE = """
         font-weight: bold;
         padding: 5px;
     }
+    QLabel#TaskCountBadge {
+        background-color: #2D2D2D;
+        color: #94A3B8;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 2px 8px;
+    }
+    QLabel#TaskTitleLabel {
+        color: #E0E0E0;
+        font-family: "Consolas", monospace;
+        font-size: 14px;
+        font-weight: normal;
+        padding: 0px;
+    }
+    QLabel#TaskDescLabel {
+        color: #94A3B8;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 12px;
+        font-weight: normal;
+        padding: 0px;
+    }
     QPushButton {
         background-color: #2D2D2D;
         border: 1px solid #3E3E3E;
@@ -40,6 +62,32 @@ MAIN_STYLE = """
     QPushButton:hover {
         background-color: #3E3E3E;
         border-color: #4E4E4E;
+    }
+    QPushButton[rowAction="true"] {
+        background-color: #1F1F1F;
+        border: 1px solid #353535;
+        border-radius: 6px;
+        color: #CBD5E1;
+        padding: 0px;
+        font-size: 12px;
+    }
+    QPushButton[rowAction="true"]:hover {
+        background-color: #333333;
+        border-color: #4E4E4E;
+    }
+    QPushButton[rowAction="true"]:disabled {
+        color: #525252;
+        border-color: #2A2A2A;
+    }
+    QPushButton#AiBtn {
+        background-color: rgba(168, 85, 247, 0.16);
+        border-color: rgba(168, 85, 247, 0.45);
+        color: #E9D5FF;
+    }
+    QPushButton#DeleteBtn:hover {
+        background-color: rgba(255, 85, 85, 0.22);
+        border-color: rgba(255, 85, 85, 0.55);
+        color: #FECACA;
     }
     QListWidget {
         background-color: transparent;
@@ -165,6 +213,12 @@ DIALOG_STYLE = """
     QPushButton#DialogCloseBtn:hover {
         color: #FFF;
         background: transparent;
+    }
+    QCheckBox {
+        color: #E0E0E0;
+        font-size: 13px;
+        spacing: 8px;
+        margin-top: 4px;
     }
 """
 

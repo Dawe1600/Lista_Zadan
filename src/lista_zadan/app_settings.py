@@ -7,6 +7,8 @@ class SettingsBackend(Protocol):
 
     def is_ai_enabled(self) -> bool: ...
 
+    def set_ai_enabled(self, enabled: bool) -> None: ...
+
     def get_gemini_api_key(self) -> str | None: ...
 
     def is_autostart_enabled(self) -> bool: ...
@@ -37,6 +39,9 @@ class WindowsQSettingsBackend:
 
     def is_ai_enabled(self) -> bool:
         return bool(self._app_settings().value("EnableAI", 0, type=int))
+
+    def set_ai_enabled(self, enabled: bool) -> None:
+        self._app_settings().setValue("EnableAI", 1 if enabled else 0)
 
     def get_gemini_api_key(self) -> str | None:
         if not self.is_ai_enabled():
@@ -74,6 +79,9 @@ class InMemorySettingsBackend:
     def is_ai_enabled(self) -> bool:
         return self._ai_enabled
 
+    def set_ai_enabled(self, enabled: bool) -> None:
+        self._ai_enabled = bool(enabled)
+
     def get_gemini_api_key(self) -> str | None:
         if not self._ai_enabled:
             return None
@@ -96,6 +104,9 @@ class AppSettings:
 
     def is_ai_enabled(self) -> bool:
         return self._backend.is_ai_enabled()
+
+    def set_ai_enabled(self, enabled: bool) -> None:
+        self._backend.set_ai_enabled(enabled)
 
     def get_gemini_api_key(self) -> str | None:
         return self._backend.get_gemini_api_key()

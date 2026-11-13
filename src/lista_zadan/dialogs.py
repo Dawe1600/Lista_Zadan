@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QAction,
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -15,9 +16,9 @@ from PyQt5.QtWidgets import (
 )
 import google.generativeai as genai
 
-from app_settings import AppSettings
-from styles import DIALOG_STYLE, apply_task_item_style, center_on_screen, install_drag
-from task_store import TaskStore
+from .app_settings import AppSettings
+from .styles import DIALOG_STYLE, apply_task_item_style, center_on_screen, install_drag
+from .task_store import TaskStore
 
 
 class FramelessDialog(QDialog):
@@ -36,13 +37,13 @@ class FramelessDialog(QDialog):
 
 
 class AddTaskDialog(FramelessDialog):
-    def __init__(self, parent=None, text="", description=""):
+    def __init__(self, parent=None, text="", description="", is_important: bool = False):
         super().__init__(parent, stay_on_top=True)
         self.setWindowTitle("Zadanie")
 
         layout = QVBoxLayout(self)
 
-        title = QLabel("Dodaj zadanie:")
+        title = QLabel("Edytuj zadanie:" if text else "Dodaj zadanie:")
         title.setAlignment(Qt.AlignLeft)
 
         self.input = QLineEdit()
@@ -54,6 +55,9 @@ class AddTaskDialog(FramelessDialog):
         self.desc_input.setPlaceholderText("Opis (opcjonalnie)...")
         self.desc_input.setPlainText(description)
 
+        self.important_checkbox = QCheckBox("Oznacz jako ważne")
+        self.important_checkbox.setChecked(bool(is_important))
+
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
@@ -61,6 +65,7 @@ class AddTaskDialog(FramelessDialog):
         layout.addWidget(title)
         layout.addWidget(self.input)
         layout.addWidget(self.desc_input)
+        layout.addWidget(self.important_checkbox)
         layout.addWidget(self.buttons)
 
         self._validate(self.input.text())
@@ -74,7 +79,11 @@ class AddTaskDialog(FramelessDialog):
         ok_btn.setEnabled(bool(text.strip()))
 
     def get_data(self):
-        return self.input.text().strip(), self.desc_input.toPlainText().strip()
+        return (
+            self.input.text().strip(),
+            self.desc_input.toPlainText().strip(),
+            self.important_checkbox.isChecked(),
+        )
 
 
 class TaskDetailsDialog(FramelessDialog):

@@ -107,7 +107,7 @@ class TaskStore:
                 return task
         return None
 
-    def add(self, text: str, description: str = "") -> Task:
+    def add(self, text: str, description: str = "", is_important: bool = False) -> Task:
         clean_text = text.strip()
         if not clean_text:
             raise ValueError("Task text cannot be empty.")
@@ -116,19 +116,27 @@ class TaskStore:
             text=clean_text,
             done=False,
             description=description.strip(),
-            is_important=False,
+            is_important=bool(is_important),
         )
         self._tasks.append(task)
         self._persist()
         return task
 
-    def update(self, task_id: str, text: str, description: str) -> Task:
+    def update(
+        self,
+        task_id: str,
+        text: str,
+        description: str,
+        is_important: bool | None = None,
+    ) -> Task:
         task = self._require(task_id)
         clean_text = text.strip()
         if not clean_text:
             raise ValueError("Task text cannot be empty.")
         task.text = clean_text
         task.description = description.strip()
+        if is_important is not None:
+            task.is_important = bool(is_important)
         self._persist()
         return task
 

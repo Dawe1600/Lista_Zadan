@@ -1,6 +1,12 @@
+import os
+import sys
 import unittest
 
-from app_settings import AppSettings, InMemorySettingsBackend
+_SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+from lista_zadan.app_settings import AppSettings, InMemorySettingsBackend
 
 
 class TestAppSettings(unittest.TestCase):
@@ -33,6 +39,21 @@ class TestAppSettings(unittest.TestCase):
 
         settings.set_autostart(False)
         self.assertFalse(settings.is_autostart_enabled())
+
+    def test_ai_enabled_toggle_controls_availability_and_api_key(self):
+        settings = AppSettings(
+            InMemorySettingsBackend(ai_enabled=False, gemini_api_key="secret-key")
+        )
+        self.assertFalse(settings.is_ai_enabled())
+        self.assertIsNone(settings.get_gemini_api_key())
+
+        settings.set_ai_enabled(True)
+        self.assertTrue(settings.is_ai_enabled())
+        self.assertEqual(settings.get_gemini_api_key(), "secret-key")
+
+        settings.set_ai_enabled(False)
+        self.assertFalse(settings.is_ai_enabled())
+        self.assertIsNone(settings.get_gemini_api_key())
 
 
 if __name__ == "__main__":
