@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QAction,
@@ -249,8 +249,7 @@ class AIWorker(QThread):
             return
 
         try:
-            genai.configure(api_key=klucz)
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            client = genai.Client(api_key=klucz)
 
             prompt = (
                 f"Jesteś asystentem produktywności. Użytkownik ma problem z następującym zadaniem: '{self.task_text}'. "
@@ -259,7 +258,10 @@ class AIWorker(QThread):
                 "Odpowiedź sformatuj w czytelnych punktach, bez zbędnego wstępu."
             )
 
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
 
             if response and response.text:
                 self.finished.emit(response.text)

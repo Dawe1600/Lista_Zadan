@@ -37,7 +37,7 @@ Jeśli chcesz zmodyfikować kod, uruchomić aplikację lokalnie ze źródeł lub
 git clone https://github.com/Dawe1600/lista_zadan.git
 
 # Zainstaluj zależności
-pip install PyQt5 google-generativeai
+pip install PyQt5 google-genai
 
 # Uruchom aplikację
 python main.py
