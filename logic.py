@@ -1,20 +1,32 @@
 import os
-import json
-import sys
-from dialogs import AddTaskDialog, CompletedTasksDialog, AIDialog
-from styles import MAIN_STYLE
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QListWidget, QListWidgetItem, QMenu, QAction, QDialog, QStyledItemDelegate, QAbstractItemView)
-from PyQt5.QtCore import Qt, QStandardPaths, QSettings
-from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QFont, QPen
 
-from mixins import DraggableMixin
-from dialogs import AddTaskDialog, CompletedTasksDialog
+from PyQt5.QtCore import Qt, QStandardPaths
+from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QPushButton,
+    QStyledItemDelegate,
+    QVBoxLayout,
+    QWidget,
+)
+
+from app_settings import AppSettings
+from dialogs import AIDialog, AddTaskDialog, CompletedTasksDialog
+from styles import MAIN_STYLE, apply_task_item_style, install_drag
+from task_store import JsonTaskRepository, Task, TaskStore
+
 
 class TaskDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
         super().paint(painter, option, index)
-        if index.data(Qt.UserRole + 1): # is_problem
+        if index.data(Qt.UserRole + 1):  # is_important
             painter.save()
             painter.setPen(QPen(QColor("#FF5555"), 2))
             painter.setBrush(Qt.NoBrush)
@@ -22,21 +34,28 @@ class TaskDelegate(QStyledItemDelegate):
             painter.drawRoundedRect(rect, 8, 8)
             painter.restore()
 
-class ListaZadan(DraggableMixin, QWidget):
-    def __init__(self):
+
+class ListaZadan(QWidget):
+    def __init__(self, store: TaskStore | None = None, settings: AppSettings | None = None):
         super().__init__()
-        self.DATA_FILE = os.path.join(QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation), 'tasks.json')
-        self.completed_tasks = []
+        if store is None:
+            data_file = os.path.join(
+                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+                "tasks.json",
+            )
+            store = TaskStore(JsonTaskRepository(data_file))
+        self.store = store
+        self.settings = settings or AppSettings()
         self.initUI()
-        self.load_tasks_into_list()
+        self.render_active_tasks()
 
     def initUI(self):
-        self.setWindowTitle('Lista Zadań')
+        self.setWindowTitle("Lista Zadań")
         self.setGeometry(1500, 750, 400, 300)
         self.setObjectName("MainWindow")
         self.setStyleSheet(MAIN_STYLE)
 
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
@@ -51,13 +70,13 @@ class ListaZadan(DraggableMixin, QWidget):
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        install_drag(self)
 
         self.root = QVBoxLayout()
         self.header = QHBoxLayout()
 
         title = QLabel("Zadania:")
         self.header.addWidget(title, alignment=Qt.AlignLeft)
-
         self.header.addStretch()
 
         self.settings_btn = QPushButton("⚙")
@@ -76,12 +95,11 @@ class ListaZadan(DraggableMixin, QWidget):
         self.list.setWordWrap(True)
         self.list.itemChanged.connect(self.on_item_changed)
         self.list.itemDoubleClicked.connect(self.edytuj_zadanie)
-        
-        # Drag & Drop
+
         self.list.setDragDropMode(QAbstractItemView.InternalMove)
         self.list.setDefaultDropAction(Qt.MoveAction)
         self.list.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.list.model().rowsMoved.connect(lambda: self.save_tasks())
+        self.list.model().rowsMoved.connect(self.on_rows_moved)
 
         self.list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self.show_context_menu)
@@ -91,214 +109,107 @@ class ListaZadan(DraggableMixin, QWidget):
         self.root.addWidget(self.list)
         self.setLayout(self.root)
 
-        self.ai_enabled = self.check_ai_status()
-    
-    def check_ai_status(self):
-        # Odczytujemy z tego samego miejsca co instalator
-        settings = QSettings("ToDoList", "ToDoWidgetApp")
-        # Zwraca 1 (True) lub 0 (False). Domyślnie 0 (False) jeśli brak wpisu.
-        return bool(settings.value("EnableAI", 0, type=int))
+        self.ai_enabled = self.settings.is_ai_enabled()
 
-    # Tworzy element listy z checkboxem (i możliwością edycji tekstu)
-    def create_item(self, text, done=False, description="", is_problem=False):
-        item = QListWidgetItem(text)
-        
+    def create_item(self, task: Task) -> QListWidgetItem:
+        item = QListWidgetItem(task.text)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-        item.setCheckState(Qt.Checked if done else Qt.Unchecked)
-        item.setData(Qt.UserRole, description)
-        item.setData(Qt.UserRole + 1, is_problem)
-        if description:
-            item.setToolTip(description)
-
-        self.apply_done_style(item)
+        item.setCheckState(Qt.Checked if task.done else Qt.Unchecked)
+        item.setData(Qt.UserRole, task.id)
+        item.setData(Qt.UserRole + 1, task.is_important)
+        if task.description:
+            item.setToolTip(task.description)
+        apply_task_item_style(item, task.done)
         return item
 
-    # Dodawanie nowego zadania
+    def render_active_tasks(self):
+        self.list.blockSignals(True)
+        self.list.clear()
+        for task in self.store.active_tasks():
+            self.list.addItem(self.create_item(task))
+        self.list.blockSignals(False)
+
     def dodaj_zadanie(self):
         dlg = AddTaskDialog(self)
         if dlg.exec_() == QDialog.Accepted:
             text, desc = dlg.get_data()
             if text:
-                self.list.blockSignals(True)
-                self.list.addItem(self.create_item(text, done=False, description=desc))
-                self.list.blockSignals(False)
-                self.save_tasks()
+                self.store.add(text, desc)
+                self.render_active_tasks()
 
-    def edytuj_zadanie(self, item):
-        text = item.text()
-        description = item.data(Qt.UserRole) or ""
-        dlg = AddTaskDialog(self, text, description)
+    def edytuj_zadanie(self, item: QListWidgetItem):
+        task_id = item.data(Qt.UserRole)
+        task = self.store.get(task_id)
+        if task is None:
+            return
+        dlg = AddTaskDialog(self, task.text, task.description)
         if dlg.exec_() == QDialog.Accepted:
             new_text, new_desc = dlg.get_data()
             if new_text:
-                self.list.blockSignals(True)
-                item.setText(new_text)
-                item.setData(Qt.UserRole, new_desc)
-                item.setToolTip(new_desc)
-                self.list.blockSignals(False)
-                self.save_tasks()
+                self.store.update(task_id, new_text, new_desc)
+                self.render_active_tasks()
 
     def pokaz_zakonczone(self):
-        dlg = CompletedTasksDialog(self, main_app=self)
+        dlg = CompletedTasksDialog(self, store=self.store, on_changed=self.render_active_tasks)
         dlg.exec_()
 
-    # Reaguj na odhaczenie/edytowanie elementu -> zapisz
-    def on_item_changed(self, item):
-        # Jeśli zadanie zostało zaznaczone (wykonane) -> przenieś do completed_tasks
+    def on_item_changed(self, item: QListWidgetItem):
         if item.checkState() == Qt.Checked:
-            self.list.blockSignals(True)
-            
-            # Dodaj do listy pamięci
-            self.completed_tasks.append({
-                'text': item.text(),
-                'done': True,
-                'description': item.data(Qt.UserRole) or ""
-            })
-            
-            # Usuń z widoku
-            row = self.list.row(item)
-            self.list.takeItem(row)
-            
-            self.list.blockSignals(False)
-        
-        self.save_tasks()
+            task_id = item.data(Qt.UserRole)
+            self.store.complete(task_id)
+            self.render_active_tasks()
 
-    def restore_task(self, text, description):
-        # Metoda wywoływana przez okno historii, aby przywrócić zadanie
-        # Usuwamy z completed_tasks (szukamy po treści - uproszczenie)
-        self.completed_tasks = [t for t in self.completed_tasks if t['text'] != text]
-        
-        self.list.blockSignals(True)
-        self.list.addItem(self.create_item(text, done=False, description=description))
-        self.list.blockSignals(False)
-        self.save_tasks()
-
-    # Wczytanie z JSON -> odtworzenie listy
-    def load_tasks_into_list(self):
-        tasks = []
-        if os.path.exists(self.DATA_FILE):
-            try:
-                with open(self.DATA_FILE, 'r', encoding='utf-8') as f:
-                    tasks = json.load(f)
-                    if not isinstance(tasks, list):
-                        tasks = []
-            except (json.JSONDecodeError, OSError):
-                tasks = []
-
-        self.list.blockSignals(True)
-        self.list.clear()
-        self.completed_tasks = []
-        
-        for t in tasks:
-            text = t.get('text', '')
-            done = bool(t.get('done', False))
-            desc = t.get('description', '')
-            is_problem = bool(t.get('is_problem', False))
-            if text:
-                if done:
-                    self.completed_tasks.append(t)
-                else:
-                    self.list.addItem(self.create_item(text, done, desc, is_problem))
-        self.list.blockSignals(False)
-
-    # Zbierz dane z listy -> zapisz do JSON
-    def save_tasks(self):
-        # Zbieramy aktywne zadania z UI
-        active_tasks = []
-        for i in range(self.list.count()):
-            it = self.list.item(i)
-            active_tasks.append({
-                'text': it.text(),
-                'done': (it.checkState() == Qt.Checked),
-                'description': it.data(Qt.UserRole) or "",
-                'is_problem': bool(it.data(Qt.UserRole + 1))
-            })
-            
-        # Łączymy z zadaniami zakończonymi
-        all_tasks = active_tasks + self.completed_tasks
-        
-        try:
-            with open(self.DATA_FILE, 'w', encoding='utf-8') as f:
-                json.dump(all_tasks, f, ensure_ascii=False, indent=2)
-        except OSError as e:
-            print(f'Błąd zapisu: {e}')
-
-    def apply_done_style(self, item: QListWidgetItem):
-        done = (item.checkState() == Qt.Checked)
-
-        f = item.font()
-        f.setStrikeOut(done)
-        item.setFont(f)
-
-        
-        item.setForeground(QColor(100, 100, 100) if done else QColor(224, 224, 224))
+    def on_rows_moved(self):
+        ordered_ids = [self.list.item(i).data(Qt.UserRole) for i in range(self.list.count())]
+        self.store.reorder_active(ordered_ids)
 
     def show_settings_menu(self):
         menu = QMenu(self)
-        
+
         autostart_action = QAction("Uruchamiaj przy starcie systemu", self)
         autostart_action.setCheckable(True)
-        autostart_action.setChecked(self.check_autostart_status())
-        autostart_action.triggered.connect(self.toggle_autostart)
-        
+        autostart_action.setChecked(self.settings.is_autostart_enabled())
+        autostart_action.triggered.connect(self.settings.set_autostart)
+
         menu.addAction(autostart_action)
         menu.exec_(self.settings_btn.mapToGlobal(self.settings_btn.rect().bottomLeft()))
-
-    def check_autostart_status(self):
-        settings = QSettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings.NativeFormat)
-        return settings.contains("ListaZadan")
-
-    def toggle_autostart(self, checked):
-        settings = QSettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings.NativeFormat)
-        if checked:
-            app_path = sys.executable.replace('/', '\\')
-            settings.setValue("ListaZadan", f'"{app_path}"')
-        else:
-            settings.remove("ListaZadan")
 
     def show_context_menu(self, pos):
         item = self.list.itemAt(pos)
         if not item:
             return
-            
+
+        task = self.store.get(item.data(Qt.UserRole))
+        if task is None:
+            return
+
         menu = QMenu(self)
-        is_problem = bool(item.data(Qt.UserRole + 1))
-        
-        #   Opcja: Zapytaj AI (tylko jeśli to problem)
-        # 1. Czy zadanie jest problemem
-        # 2. Czy użytkownik włączył AI w instalatorze (self.ai_enabled)
-        if is_problem and self.ai_enabled:
+
+        if task.is_important and self.ai_enabled:
             ai_action = QAction("🧠 Zapytaj AI jak to rozwiązać", self)
-            ai_action.triggered.connect(lambda: self.ask_ai_solution(item))
+            ai_action.triggered.connect(lambda: self.ask_ai_solution(task))
             menu.addAction(ai_action)
             menu.addSeparator()
 
-        # 2. Opcja: Oznaczanie jako problem
-        problem_text = "Usuń oznaczenie problemu" if is_problem else "Oznacz jako problem"
-        toggle_action = QAction(problem_text, self)
-        toggle_action.triggered.connect(lambda: self.toggle_problem(item))
+        important_text = "Usuń oznaczenie ważności" if task.is_important else "Oznacz jako ważne"
+        toggle_action = QAction(important_text, self)
+        toggle_action.triggered.connect(lambda: self.toggle_important(task.id))
         menu.addAction(toggle_action)
-        
-        # 3. Opcja: Usuń zadanie (opcjonalnie, skoro to menu kontekstowe)
+
         delete_action = QAction("Usuń zadanie", self)
-        delete_action.triggered.connect(lambda: self.delete_task_from_context(item))
+        delete_action.triggered.connect(lambda: self.delete_task_from_context(task.id))
         menu.addAction(delete_action)
 
         menu.exec_(self.list.mapToGlobal(pos))
 
-    def toggle_problem(self, item):
-        current = bool(item.data(Qt.UserRole + 1))
-        item.setData(Qt.UserRole + 1, not current)
+    def toggle_important(self, task_id: str):
+        self.store.toggle_important(task_id)
+        self.render_active_tasks()
 
-    def ask_ai_solution(self, item):
-        text = item.text()
-        desc = item.data(Qt.UserRole) or ""
-        
-        # Otwieramy okno AI
-        dlg = AIDialog(self, text, desc)
+    def ask_ai_solution(self, task: Task):
+        dlg = AIDialog(self, task.text, task.description, settings=self.settings)
         dlg.exec_()
 
-    def delete_task_from_context(self, item):
-        row = self.list.row(item)
-        self.list.takeItem(row)
-        self.save_tasks()
+    def delete_task_from_context(self, task_id: str):
+        self.store.delete(task_id)
+        self.render_active_tasks()
