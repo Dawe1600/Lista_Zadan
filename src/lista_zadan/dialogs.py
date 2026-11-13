@@ -1,3 +1,4 @@
+import google.generativeai as genai
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QAction,
@@ -14,7 +15,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
-import google.generativeai as genai
 
 from .app_settings import AppSettings
 from .styles import DIALOG_STYLE, apply_task_item_style, center_on_screen, install_drag

@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtCore import QSize, Qt, QStandardPaths
+from PyQt5.QtCore import QSize, QStandardPaths, Qt
 from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QAbstractItemView,
@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (
 )
 
 from .app_settings import AppSettings
-from .dialogs import AIDialog, AddTaskDialog, CompletedTasksDialog
+from .dialogs import AddTaskDialog, AIDialog, CompletedTasksDialog
 from .styles import MAIN_STYLE, install_drag
 from .task_store import JsonTaskRepository, Task, TaskStore
 

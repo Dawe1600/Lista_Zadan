@@ -1,12 +1,7 @@
 import os
-import sys
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
-_SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-if _SRC_DIR not in sys.path:
-    sys.path.insert(0, _SRC_DIR)
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton

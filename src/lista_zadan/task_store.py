@@ -52,7 +52,7 @@ class JsonTaskRepository:
         if not os.path.exists(self.file_path):
             return []
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
             return data if isinstance(data, list) else []
         except (json.JSONDecodeError, OSError):
