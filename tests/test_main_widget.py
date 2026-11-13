@@ -9,7 +9,6 @@ if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton
 
 from lista_zadan.app_settings import AppSettings, InMemorySettingsBackend
@@ -201,7 +200,7 @@ class TestMainWidget(unittest.TestCase):
         menu.actions()[2].trigger()
         self.assertFalse(store.get("1").is_important)
 
-    def test_widget_paints_dark_background_and_rows_fit_without_clipping(self):
+    def test_widget_has_transparent_background_and_rows_fit_without_clipping(self):
         widget, _, _ = self._make_widget(
             initial_tasks=[
                 {
@@ -216,9 +215,8 @@ class TestMainWidget(unittest.TestCase):
         widget.show()
         self._app.processEvents()
 
-        # 1. MainWindow background must paint #1e1e1e (not stay transparent/unpainted)
-        img = widget.grab().toImage()
-        self.assertEqual(QColor(img.pixel(20, 20)).name(), "#1e1e1e")
+        # 1. MainWindow outer background must remain translucent
+        self.assertTrue(widget.testAttribute(Qt.WA_TranslucentBackground))
 
         # 2. Row quick actions must fit inside the list viewport without horizontal clipping
         item = widget.list.item(0)

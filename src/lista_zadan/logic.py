@@ -14,8 +14,6 @@ from PyQt5.QtWidgets import (
     QMenu,
     QPushButton,
     QSizePolicy,
-    QStyle,
-    QStyleOption,
     QStyledItemDelegate,
     QVBoxLayout,
     QWidget,
@@ -255,12 +253,6 @@ class ListaZadan(QWidget):
     def complete_task(self, task_id: str):
         self.store.complete(task_id)
         self.render_active_tasks()
-
-    def paintEvent(self, event):
-        opt = QStyleOption()
-        opt.initFrom(self)
-        painter = QPainter(self)
-        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
 
     def render_active_tasks(self):
         active = self.store.active_tasks()
