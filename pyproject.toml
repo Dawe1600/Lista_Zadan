@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lista-zadan"
-version = "0.1.0"
+version = "1.1.0"
 description = "Desktopowa aplikacja To-Do w PyQt5 z asystentem AI (Google Gemini)"
 requires-python = ">=3.10"
 dependencies = [

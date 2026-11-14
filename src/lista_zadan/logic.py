@@ -1,4 +1,5 @@
 import os
+import sys
 
 from PyQt5.QtCore import QSize, QStandardPaths, Qt
 from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QPen, QPixmap
@@ -26,11 +27,19 @@ from .task_store import JsonTaskRepository, Task, TaskStore
 
 
 def _resolve_icon_path() -> str:
+    candidates: list[str] = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(os.path.join(meipass, "icon.ico"))
+    if getattr(sys, "frozen", False):
+        candidates.append(os.path.join(os.path.dirname(sys.executable), "icon.ico"))
     package_dir = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(package_dir, "icon.ico"),
-        os.path.abspath(os.path.join(package_dir, "..", "..", "icon.ico")),
-    ]
+    candidates.extend(
+        [
+            os.path.join(package_dir, "icon.ico"),
+            os.path.abspath(os.path.join(package_dir, "..", "..", "icon.ico")),
+        ]
+    )
     for path in candidates:
         if os.path.exists(path):
             return path

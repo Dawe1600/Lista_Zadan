@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (optional, defaults to pyproject.toml version)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies and PyInstaller
+        run: pip install -e ".[dev]" pyinstaller
+
+      - name: Lint with ruff
+        run: ruff check src tests
+
+      - name: Run unit tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest discover -s tests -v
+
+      - name: Resolve version and tag
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+            $version = $tag.TrimStart("v")
+          } elseif ("${{ inputs.version }}" -ne "") {
+            $version = "${{ inputs.version }}".TrimStart("v")
+            $tag = "v$version"
+          } else {
+            $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+            $tag = "v$version"
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build executable with PyInstaller
+        run: pyinstaller --noconfirm --clean packaging/ToDoList.spec
+
+      - name: Ensure Inno Setup is installed
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y
+          }
+
+      - name: Build installer with Inno Setup
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.meta.outputs.version }}" packaging/installer.iss
+
+      - name: Create Draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $version = "${{ steps.meta.outputs.version }}"
+          $installer = "Output/ToDoList-Setup-v$version.exe"
+          if (-not (Test-Path $installer)) {
+            throw "Installer not found: $installer"
+          }
+          gh release create $tag $installer `
+            --draft `
+            --title "ToDoList v$version" `
+            --generate-notes
