@@ -1,43 +1,109 @@
-# 📝 Lista Zadań AI (To-Do List AI)
+<div align="center">
 
-Nowoczesna, desktopowa aplikacja do zarządzania zadaniami (To-Do) stworzona w języku Python przy użyciu biblioteki **PyQt5**. Aplikacja wyróżnia się minimalistycznym, ciemnym interfejsem (Dark Mode) oraz wbudowanym **Asystentem AI** (napędzanym przez Google Gemini), który pomaga w rozwiązywaniu najtrudniejszych zadań.
+# 📝 Lista Zadań AI
 
-<img width="423" height="243" alt="ToDoListAi" src="https://github.com/user-attachments/assets/9da27445-49ec-4a6c-9b5b-1cfe2a83b819" />
+**Minimalistyczny, przezroczysty widget To-Do na pulpit Windows (PyQt5) z wbudowanym asystentem AI (Google Gemini).**
 
-## ✨ Główne funkcje
+[![CI](https://github.com/Dawe1600/Lista_Zadan/actions/workflows/ci.yml/badge.svg)](https://github.com/Dawe1600/Lista_Zadan/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Dawe1600/Lista_Zadan?label=release&color=blue)](https://github.com/Dawe1600/Lista_Zadan/releases/latest)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)](https://github.com/Dawe1600/Lista_Zadan/releases)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-* **Wsparcie AI (Google Gemini):** Oznacz zadanie jako "problem", kliknij prawym przyciskiem myszy i poproś AI o wygenerowanie 3 konkretnych kroków do jego rozwiązania.
-* **Drag & Drop:** Wygodnie zmieniaj kolejność zadań chwytając je i upuszczając (interaktywny kursor rączki).
-* **Nowoczesny Interfejs (Frameless):** Brak standardowych ramek systemu Windows. Okno można swobodnie przeciągać po ekranie, chwytając za dowolne puste miejsce.
-* **Zarządzanie Zadaniami:** Dodawanie, edycja, usuwanie i opcjonalne dodawanie dłuższych opisów.
-* **Historia Zadań:** Dedykowany widok dla ukończonych zadań z opcją ich łatwego przywracania.
-* **Autostart:** Możliwość uruchamiania aplikacji wraz ze startem systemu Windows.
+<br />
 
-## 📥 Instalacja (Dla użytkowników)
+<img src="docs/assets/ToDoListAi.png" alt="Podgląd aplikacji Lista Zadań AI" width="520" />
 
-Nie musisz znać Pythona, aby korzystać z tej aplikacji!
-1. Przejdź do zakładki **[Releases](../../releases)** po prawej stronie repozytorium na GitHubie.
-2. Pobierz najnowszy plik `Instalator_ListyZadan.exe`.
-3. Uruchom instalator. W trakcie instalacji zostaniesz zapytany, czy chcesz włączyć funkcje AI.
-4. Jeśli wybierzesz "Tak", wklej swój darmowy klucz **Google Gemini API** (możesz go wygenerować w [Google AI Studio](https://aistudio.google.com/)).
-5. Gotowe! Aplikacja zainstaluje się i jest gotowa do pracy.
+</div>
 
 ---
 
-## 🛠️ Dla programistów (Uruchamianie i kompilacja)
+## ✨ Główne funkcje
 
-Jeśli chcesz zmodyfikować kod, uruchomić aplikację lokalnie ze źródeł lub samodzielnie ją skompilować, postępuj zgodnie z poniższymi krokami.
+* **Asystent AI (Google Gemini):** Oznacz zadanie jako ważne i skorzystaj z menu kontekstowego, aby AI wygenerowało 3 konkretne kroki pomagające ruszyć z miejsca.
+* **Przezroczysty interfejs bez ramek (Frameless Dark Mode):** Okno wtapia się w pulpit i można je swobodnie przeciągać za dowolne puste miejsce.
+* **Drag & Drop:** Wygodna zmiana kolejności aktywnych zadań poprzez przeciąganie i upuszczanie.
+* **Zarządzanie zadaniami:** Dodawanie, edycja, oznaczanie ważności, opcjonalne dłuższe opisy oraz usuwanie zadań.
+* **Historia zadań:** Dedykowany widok ukończonych zadań z możliwością ich szybkiego przywrócenia.
+* **Autostart w Windows:** Opcjonalne uruchamianie widgetu wraz ze startem systemu (ustawienia zapisywane w Rejestrze Windows).
 
-### 1. Wymagania i uruchomienie ze źródeł
-* Python 3.8+
-* System operacyjny: Windows (aplikacja korzysta z Rejestru Windows do zapisu ustawień).
+---
+
+## 📥 Instalacja (dla użytkowników)
+
+Nie musisz mieć zainstalowanego Pythona, aby korzystać z aplikacji:
+
+1. Przejdź do zakładki **[Releases](https://github.com/Dawe1600/Lista_Zadan/releases/latest)**.
+2. Pobierz najnowszy instalator `ToDoList-Setup-v*.exe`.
+3. Uruchom instalator — podczas konfiguracji możesz od razu włączyć funkcje AI.
+4. Jeśli włączasz AI, wklej swój klucz **Google Gemini API** (możesz go wygenerować w [Google AI Studio](https://aistudio.google.com/)).
+5. Gotowe! Aplikacja pojawi się na pulpicie.
+
+---
+
+## 🛠️ Dla programistów
+
+### Wymagania
+
+* **Python 3.10+**
+* **Windows** (integracja z autostartem i ustawieniami korzysta z Rejestru Windows)
+
+### Uruchomienie ze źródeł
 
 ```bash
 # Sklonuj repozytorium
-git clone https://github.com/Dawe1600/lista_zadan.git
+git clone https://github.com/Dawe1600/Lista_Zadan.git
+cd Lista_Zadan
 
-# Zainstaluj zależności
-pip install PyQt5 google-genai
+# Utwórz i aktywuj środowisko wirtualne
+python -m venv .venv
+.venv\Scripts\activate
+
+# Zainstaluj pakiet wraz z narzędziami deweloperskimi
+pip install -e ".[dev]"
 
 # Uruchom aplikację
-python main.py
+python -m lista_zadan
+# (alternatywnie: python main.py)
+```
+
+### Lint i testy
+
+CI uruchamia automatycznie na `windows-latest`:
+
+```bash
+# Sprawdzenie jakości kodu (ruff)
+ruff check src tests
+
+# Testy jednostkowe (w trybie offscreen dla PyQt5)
+# PowerShell:
+$env:QT_QPA_PLATFORM="offscreen"; python -m unittest discover -s tests -v
+```
+
+---
+
+## 🧩 Architektura projektu
+
+```text
+Lista_Zadan/
+├── src/lista_zadan/
+│   ├── __main__.py       # Punkt wejścia (python -m lista_zadan)
+│   ├── logic.py          # Główne okno widgetu (ListaZadan), obsługa UI i zdarzeń
+│   ├── task_store.py     # Model Task oraz warstwa persystencji zadań (JSON)
+│   ├── dialogs.py        # Okna dialogowe (edycja, historia, pomoc AI z workerem QThread)
+│   ├── app_settings.py   # Ustawienia aplikacji i integracja z Rejestrem Windows
+│   └── styles.py         # Style QSS i niestandardowe malowanie/animacje
+├── tests/                # Testy jednostkowe i geometrii widgetu
+├── packaging/            # Konfiguracja PyInstaller i Inno Setup
+├── docs/                 # Dokumentacja projektu i zasoby wizualne
+├── CODING_STANDARDS.md   # Zasady architektury i przeglądów kodu
+└── GLOSSARY.md           # Słownik pojęć domenowych
+```
+
+---
+
+## 🤝 Współpraca i licencja
+
+* Chcesz pomóc w rozwoju projektu? Zajrzyj do [CONTRIBUTING.md](CONTRIBUTING.md).
+* Projekt udostępniany jest na licencji **[MIT](LICENSE)**.

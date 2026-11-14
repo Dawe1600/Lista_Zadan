@@ -1,0 +1,46 @@
+name: Zgłoszenie błędu
+description: Zgłoś problem lub nieoczekiwane zachowanie aplikacji
+title: "[Bug]: "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Dzięki za zgłoszenie błędu! Wypełnij poniższe pola, aby ułatwić jego odtworzenie.
+  - type: textarea
+    id: description
+    attributes:
+      label: Opis błędu
+      description: Co dokładnie poszło nie tak i jakiego zachowania oczekiwałeś/aś?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Kroki do odtworzenia
+      description: Jak krok po kroku wywołać problem?
+      placeholder: |
+        1. Uruchom aplikację...
+        2. Kliknij...
+        3. Pojawia się...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Wersja aplikacji
+      description: Np. v1.1.0 (z instalatora) lub commit z gałęzi main
+      placeholder: v1.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: System operacyjny
+      placeholder: Windows 11 23H2
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Dodatkowe informacje / zrzuty ekranu
+      description: Logi, komunikaty błędów lub zrzuty ekranu (opcjonalnie).
