@@ -88,7 +88,7 @@ begin
     CustomMessage('AiPageSubTitle')
   );
 
-  AiEnableCheckBox := TNewCheckBox.Create(AiPage);
+  AiEnableCheckBox := TNewCheckBox.Create(WizardForm);
   AiEnableCheckBox.Parent := AiPage.Surface;
   AiEnableCheckBox.Left := 0;
   AiEnableCheckBox.Top := ScaleY(8);
@@ -101,7 +101,7 @@ begin
   else
     AiEnableCheckBox.Checked := True;
 
-  AiKeyLabel := TNewStaticText.Create(AiPage);
+  AiKeyLabel := TNewStaticText.Create(WizardForm);
   AiKeyLabel.Parent := AiPage.Surface;
   AiKeyLabel.Left := 0;
   AiKeyLabel.Top := AiEnableCheckBox.Top + AiEnableCheckBox.Height + ScaleY(16);
@@ -110,7 +110,7 @@ begin
   AiKeyLabel.AutoSize := True;
   AiKeyLabel.Caption := CustomMessage('AiKeyLabel');
 
-  AiKeyEdit := TNewEdit.Create(AiPage);
+  AiKeyEdit := TNewEdit.Create(WizardForm);
   AiKeyEdit.Parent := AiPage.Surface;
   AiKeyEdit.Left := 0;
   AiKeyEdit.Top := AiKeyLabel.Top + AiKeyLabel.Height + ScaleY(8);
@@ -118,7 +118,7 @@ begin
   if RegQueryStringValue(HKEY_CURRENT_USER, '{#AppRegKey}', 'GeminiApiKey', ExistingApiKey) then
     AiKeyEdit.Text := ExistingApiKey;
 
-  AiHintLabel := TNewStaticText.Create(AiPage);
+  AiHintLabel := TNewStaticText.Create(WizardForm);
   AiHintLabel.Parent := AiPage.Surface;
   AiHintLabel.Left := 0;
   AiHintLabel.Top := AiKeyEdit.Top + AiKeyEdit.Height + ScaleY(12);
@@ -127,7 +127,7 @@ begin
   AiHintLabel.AutoSize := True;
   AiHintLabel.Caption := CustomMessage('AiHintLabel');
 
-  UpdateAiInputState(nil);
+  AiKeyEdit.Enabled := AiEnableCheckBox.Checked;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
