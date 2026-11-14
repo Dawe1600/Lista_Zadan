@@ -74,7 +74,8 @@ var
 
 procedure UpdateAiInputState(Sender: TObject);
 begin
-  AiKeyEdit.Enabled := AiEnableCheckBox.Checked;
+  if Assigned(AiKeyEdit) then
+    AiKeyEdit.Enabled := AiEnableCheckBox.Checked;
 end;
 
 procedure InitializeWizard;
@@ -94,7 +95,6 @@ begin
   AiEnableCheckBox.Top := ScaleY(8);
   AiEnableCheckBox.Width := AiPage.SurfaceWidth;
   AiEnableCheckBox.Caption := CustomMessage('AiEnableCheck');
-  AiEnableCheckBox.OnClick := @UpdateAiInputState;
 
   if RegQueryDWordValue(HKEY_CURRENT_USER, '{#AppRegKey}', 'EnableAI', ExistingEnableAI) then
     AiEnableCheckBox.Checked := (ExistingEnableAI <> 0)
@@ -127,6 +127,7 @@ begin
   AiHintLabel.AutoSize := True;
   AiHintLabel.Caption := CustomMessage('AiHintLabel');
 
+  AiEnableCheckBox.OnClick := @UpdateAiInputState;
   AiKeyEdit.Enabled := AiEnableCheckBox.Checked;
 end;
 
