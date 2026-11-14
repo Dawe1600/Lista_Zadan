@@ -13,7 +13,7 @@
 
 <br />
 
-<img src="docs/assets/ToDoListAi.png" alt="Podgląd aplikacji Lista Zadań AI" width="520" />
+<img src="docs/assets/preview.png" alt="Podgląd aplikacji Lista Zadań AI" width="520" />
 
 </div>
 
